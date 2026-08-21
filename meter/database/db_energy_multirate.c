@@ -207,7 +207,7 @@ static int mkdir_fullpath(const char *pcPath)
 /*************************************************************************/
 static struct db_energy_multirate_type *db_multirate_get(struct db_database_measure_base_type *pDB)
 {
-    return &pDB->db_measure.energy.multirate;
+    return &pDB->db_measure.energy.multirate_hp;
 }
 
 /*************************************************************************/
@@ -219,7 +219,7 @@ static struct db_energy_multirate_type *db_multirate_get(struct db_database_meas
 /*************************************************************************/
 static void db_multirate_set(struct db_database_measure_base_type *pDB, struct db_energy_multirate_type *pEnergy)
 {
-    pDB->db_measure.energy.multirate = *pEnergy;
+    pDB->db_measure.energy.multirate_hp = *pEnergy;
 }
 
 /*************************************************************************/
@@ -310,39 +310,39 @@ static int db_multirate_energy_sql_get_item(struct db_multirate_energy_sql_ctx *
         if (rc == SQLITE_ROW)
         {
             pCtx->id                  = sqlite3_column_int64(stmt, 0);
-            pEnergy->rate[0].kWhImp   = (uint32_t)sqlite3_column_int64(stmt, 3);    //"  [Kwh_sharp] INT64 → UINT32"
-            pEnergy->rate[0].kWhExp   = (uint32_t)sqlite3_column_int64(stmt, 4);    //"  [Kwh_sharp] INT64 → UINT32"
-            pEnergy->rate[0].kvarhImp = (uint32_t)sqlite3_column_int64(stmt, 5);    //"  [Kvarh_sharp] INT64 → UINT32"
-            pEnergy->rate[0].kvarhExp = (uint32_t)sqlite3_column_int64(stmt, 6);    //"  [Kvarh_sharp] INT64 → UINT32"
-            pEnergy->rate[1].kWhImp   = (uint32_t)sqlite3_column_int64(stmt, 7);    //"  [Kwh_peak] INT64 → UINT32"
-            pEnergy->rate[1].kWhExp   = (uint32_t)sqlite3_column_int64(stmt, 8);    //"  [Kwh_peak] INT64 → UINT32"
-            pEnergy->rate[1].kvarhImp = (uint32_t)sqlite3_column_int64(stmt, 9);    //"  [Kvarh_peak] INT64 → UINT32"
-            pEnergy->rate[1].kvarhExp = (uint32_t)sqlite3_column_int64(stmt, 10);   //"  [Kvarh_peak] INT64 → UINT32"
-            pEnergy->rate[2].kWhImp   = (uint32_t)sqlite3_column_int64(stmt, 11);   //"  [Kwh_flat] INT64 → UINT32"
-            pEnergy->rate[2].kWhExp   = (uint32_t)sqlite3_column_int64(stmt, 12);   //"  [Kwh_flat] INT64 → UINT32"
-            pEnergy->rate[2].kvarhImp = (uint32_t)sqlite3_column_int64(stmt, 13);   //"  [Kvarh_flat] INT64 → UINT32"
-            pEnergy->rate[2].kvarhExp = (uint32_t)sqlite3_column_int64(stmt, 14);   //"  [Kvarh_flat] INT64 → UINT32"
-            pEnergy->rate[3].kWhImp   = (uint32_t)sqlite3_column_int64(stmt, 15);   //"  [Kwh_valley] INT64 → UINT32"
-            pEnergy->rate[3].kWhExp   = (uint32_t)sqlite3_column_int64(stmt, 16);   //"  [Kwh_valley] INT64 → UINT32"
-            pEnergy->rate[3].kvarhImp = (uint32_t)sqlite3_column_int64(stmt, 17);   //"  [Kvarh_valley] INT64 → UINT32"
-            pEnergy->rate[3].kvarhExp = (uint32_t)sqlite3_column_int64(stmt, 18);   //"  [Kvarh_valley] INT64 → UINT32"
- 
-            pEnergy->rate[4].kWhImp   = (uint32_t)sqlite3_column_int64(stmt, 19);   //"  [Kwh_sharp] INT64 → UINT32"
-            pEnergy->rate[4].kWhExp   = (uint32_t)sqlite3_column_int64(stmt, 20);   //"  [Kwh_sharp] INT64 → UINT32"
-            pEnergy->rate[4].kvarhImp = (uint32_t)sqlite3_column_int64(stmt, 21);   //"  [Kvarh_sharp] INT64 → UINT32"
-            pEnergy->rate[4].kvarhExp = (uint32_t)sqlite3_column_int64(stmt, 22);   //"  [Kvarh_sharp] INT64 → UINT32"
-            pEnergy->rate[5].kWhImp   = (uint32_t)sqlite3_column_int64(stmt, 23);   //"  [Kwh_peak] INT64 → UINT32"
-            pEnergy->rate[5].kWhExp   = (uint32_t)sqlite3_column_int64(stmt, 24);   //"  [Kwh_peak] INT64 → UINT32"
-            pEnergy->rate[5].kvarhImp = (uint32_t)sqlite3_column_int64(stmt, 25);   //"  [Kvarh_peak] INT64 → UINT32"
-            pEnergy->rate[5].kvarhExp = (uint32_t)sqlite3_column_int64(stmt, 26);   //"  [Kvarh_peak] INT64 → UINT32"
-            pEnergy->rate[6].kWhImp   = (uint32_t)sqlite3_column_int64(stmt, 27);   //"  [Kwh_flat] INT64 → UINT32"
-            pEnergy->rate[6].kWhExp   = (uint32_t)sqlite3_column_int64(stmt, 28);   //"  [Kwh_flat] INT64 → UINT32"
-            pEnergy->rate[6].kvarhImp = (uint32_t)sqlite3_column_int64(stmt, 29);   //"  [Kvarh_flat] INT64 → UINT32"
-            pEnergy->rate[6].kvarhExp = (uint32_t)sqlite3_column_int64(stmt, 30);   //"  [Kvarh_flat] INT64 → UINT32"
-            pEnergy->rate[7].kWhImp   = (uint32_t)sqlite3_column_int64(stmt, 31);   //"  [Kwh_valley] INT64 → UINT32"
-            pEnergy->rate[7].kWhExp   = (uint32_t)sqlite3_column_int64(stmt, 32);   //"  [Kwh_valley] INT64 → UINT32"
-            pEnergy->rate[7].kvarhImp = (uint32_t)sqlite3_column_int64(stmt, 33);   //"  [Kvarh_valley] INT64 → UINT32"
-            pEnergy->rate[7].kvarhExp = (uint32_t)sqlite3_column_int64(stmt, 34);   //"  [Kvarh_valley] INT64 → UINT32"
+            pEnergy->rate[0].kWhImp   = (uint64_t)sqlite3_column_int64(stmt, 3);    //"  [Kwh_sharp] INT64 → UINT64"
+            pEnergy->rate[0].kWhExp   = (uint64_t)sqlite3_column_int64(stmt, 4);    //"  [Kwh_sharp] INT64 → UINT64"
+            pEnergy->rate[0].kvarhImp = (uint64_t)sqlite3_column_int64(stmt, 5);    //"  [Kvarh_sharp] INT64 → UINT64"
+            pEnergy->rate[0].kvarhExp = (uint64_t)sqlite3_column_int64(stmt, 6);    //"  [Kvarh_sharp] INT64 → UINT64"
+            pEnergy->rate[1].kWhImp   = (uint64_t)sqlite3_column_int64(stmt, 7);    //"  [Kwh_peak] INT64 → UINT64"
+            pEnergy->rate[1].kWhExp   = (uint64_t)sqlite3_column_int64(stmt, 8);    //"  [Kwh_peak] INT64 → UINT64"
+            pEnergy->rate[1].kvarhImp = (uint64_t)sqlite3_column_int64(stmt, 9);    //"  [Kvarh_peak] INT64 → UINT64"
+            pEnergy->rate[1].kvarhExp = (uint64_t)sqlite3_column_int64(stmt, 10);   //"  [Kvarh_peak] INT64 → UINT64"
+            pEnergy->rate[2].kWhImp   = (uint64_t)sqlite3_column_int64(stmt, 11);   //"  [Kwh_flat] INT64 → UINT64"
+            pEnergy->rate[2].kWhExp   = (uint64_t)sqlite3_column_int64(stmt, 12);   //"  [Kwh_flat] INT64 → UINT64"
+            pEnergy->rate[2].kvarhImp = (uint64_t)sqlite3_column_int64(stmt, 13);   //"  [Kvarh_flat] INT64 → UINT64"
+            pEnergy->rate[2].kvarhExp = (uint64_t)sqlite3_column_int64(stmt, 14);   //"  [Kvarh_flat] INT64 → UINT64"
+            pEnergy->rate[3].kWhImp   = (uint64_t)sqlite3_column_int64(stmt, 15);   //"  [Kwh_valley] INT64 → UINT64"
+            pEnergy->rate[3].kWhExp   = (uint64_t)sqlite3_column_int64(stmt, 16);   //"  [Kwh_valley] INT64 → UINT64"
+            pEnergy->rate[3].kvarhImp = (uint64_t)sqlite3_column_int64(stmt, 17);   //"  [Kvarh_valley] INT64 → UINT64"
+            pEnergy->rate[3].kvarhExp = (uint64_t)sqlite3_column_int64(stmt, 18);   //"  [Kvarh_valley] INT64 → UINT64"
+
+            pEnergy->rate[4].kWhImp   = (uint64_t)sqlite3_column_int64(stmt, 19);   //"  [Kwh_sharp] INT64 → UINT64"
+            pEnergy->rate[4].kWhExp   = (uint64_t)sqlite3_column_int64(stmt, 20);   //"  [Kwh_sharp] INT64 → UINT64"
+            pEnergy->rate[4].kvarhImp = (uint64_t)sqlite3_column_int64(stmt, 21);   //"  [Kvarh_sharp] INT64 → UINT64"
+            pEnergy->rate[4].kvarhExp = (uint64_t)sqlite3_column_int64(stmt, 22);   //"  [Kvarh_sharp] INT64 → UINT64"
+            pEnergy->rate[5].kWhImp   = (uint64_t)sqlite3_column_int64(stmt, 23);   //"  [Kwh_peak] INT64 → UINT64"
+            pEnergy->rate[5].kWhExp   = (uint64_t)sqlite3_column_int64(stmt, 24);   //"  [Kwh_peak] INT64 → UINT64"
+            pEnergy->rate[5].kvarhImp = (uint64_t)sqlite3_column_int64(stmt, 25);   //"  [Kvarh_peak] INT64 → UINT64"
+            pEnergy->rate[5].kvarhExp = (uint64_t)sqlite3_column_int64(stmt, 26);   //"  [Kvarh_peak] INT64 → UINT64"
+            pEnergy->rate[6].kWhImp   = (uint64_t)sqlite3_column_int64(stmt, 27);   //"  [Kwh_flat] INT64 → UINT64"
+            pEnergy->rate[6].kWhExp   = (uint64_t)sqlite3_column_int64(stmt, 28);   //"  [Kwh_flat] INT64 → UINT64"
+            pEnergy->rate[6].kvarhImp = (uint64_t)sqlite3_column_int64(stmt, 29);   //"  [Kvarh_flat] INT64 → UINT64"
+            pEnergy->rate[6].kvarhExp = (uint64_t)sqlite3_column_int64(stmt, 30);   //"  [Kvarh_flat] INT64 → UINT64"
+            pEnergy->rate[7].kWhImp   = (uint64_t)sqlite3_column_int64(stmt, 31);   //"  [Kwh_valley] INT64 → UINT64"
+            pEnergy->rate[7].kWhExp   = (uint64_t)sqlite3_column_int64(stmt, 32);   //"  [Kwh_valley] INT64 → UINT64"
+            pEnergy->rate[7].kvarhImp = (uint64_t)sqlite3_column_int64(stmt, 33);   //"  [Kvarh_valley] INT64 → UINT64"
+            pEnergy->rate[7].kvarhExp = (uint64_t)sqlite3_column_int64(stmt, 34);   //"  [Kvarh_valley] INT64 → UINT64"
             ret = 0;
         }
         else if (rc == SQLITE_DONE)
