@@ -124,6 +124,8 @@ static int mb_cmd_rn7302_demo_handle(struct mb_comm_ctx_t *pCtx,  struct remap_M
 static int mb_cmd_clearE2_handle(struct mb_comm_ctx_t *pCtx,  struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
 static int mb_cmd_historyE2_handle(struct mb_comm_ctx_t *pCtx,  struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
 static int mb_cmd_clearMultirateE2_handle(struct mb_comm_ctx_t *pCtx,  struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
+static int mb_write_eng_rt_handle(struct mb_comm_ctx_t *pCtx,  struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
+static int mb_write_eng_multi_handle(struct mb_comm_ctx_t *pCtx,  struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
 
 
 static int mb_cmd_adjustRst_handle_meter1(struct mb_comm_ctx_t *pCtx,  struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
@@ -299,6 +301,10 @@ static const ST_REG_4XXXX_ATTR   reg_4x_section[] = {
     { NULL,                                                      59101,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_clearE2_handle}, // 清电能
     { NULL,                                                      59102,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_historyE2_handle}, // 清电能
     { NULL,                                                      59111,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_clearMultirateE2_handle}, // 清电能
+    
+    // { NULL,                                                      59200,      24,                                             MB_TYPE_CMD,      RW_NP ,   NULL,    mb_write_eng_rt_handle}, // 清电能
+    // { NULL,                                                      59224,      16,                                             MB_TYPE_CMD,      RW_NP ,   NULL,    mb_write_eng_multi_handle}, // 清电能
+
     { NULL,                                                      57000,      100,                                             MB_TYPE_CMD,      RW_NP ,  NULL,    mb_cmd_ota_set_url_handle }, // 写http命令升级
     /*
         公共寄存器段
@@ -1425,6 +1431,121 @@ static __inline int mb_cmd_clearMultirateE2_handle(struct mb_comm_ctx_t *pCtx,  
     
     return 0;
 };
+
+#if 0
+/*********************************************************************************************************
+** Function name:      mb_cmd_clearMultirateE2_handle 
+** Descriptions:        
+** input parameters:    NONE
+** output parameters:   NONE
+** Returned value:      NONE
+*********************************************************************************************************/
+static __inline int mb_write_eng_rt_handle(struct mb_comm_ctx_t *pCtx,  struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value)
+{
+    if (reg_num != 24)
+    {
+        return -1;
+    }
+
+    #define ENERGY_MAXNUM       (99999999999)
+
+    uint32_t val_l = 0;
+    uint32_t val_h = 0;
+    uint64_t val_64 = 0;
+
+    struct db_database_type         *pVmem     = pCtx->pvmem;
+    struct db_realtime_energy_type  *pEngRtHP  = &pVmem->db_measurebase[0].db_measure.energy.realtime_hp;
+    struct db_energy_multirate_type *pEngMulti = &pVmem->db_measurebase[0].db_measure.energy.multirate;
+
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        /* 正向有功 */
+        val_l  = MB_ALIGN_PT_16BIT_READ(p_value + 0 + i * 8 + 0) | (MB_ALIGN_PT_16BIT_READ(p_value + 2 + i * 8 + 0) << 16);
+        val_h  = MB_ALIGN_PT_16BIT_READ(p_value + 4 + i * 8 + 0) | (MB_ALIGN_PT_16BIT_READ(p_value + 6 + i * 8 + 0) << 16);
+        val_64 = (uint64_t)val_h << 32 | val_l;
+        pEngRtHP->kWhImp[i] = val_64 % (ENERGY_MAXNUM + 1);
+        
+        /* 反向有功 */
+        val_l  = MB_ALIGN_PT_16BIT_READ(p_value + 0 + i * 8 + 24) | (MB_ALIGN_PT_16BIT_READ(p_value + 2 + i * 8 + 24) << 16);
+        val_h  = MB_ALIGN_PT_16BIT_READ(p_value + 4 + i * 8 + 24) | (MB_ALIGN_PT_16BIT_READ(p_value + 6 + i * 8 + 24) << 16);
+        val_64 = (uint64_t)val_h << 32 | val_l;
+        pEngRtHP->kWhExp[i] = val_64 % (ENERGY_MAXNUM + 1);
+        
+        // /* 正向无功 */
+        // val_l  = MB_ALIGN_PT_16BIT_READ(p_value + 0 + i * 8 + 48) | (MB_ALIGN_PT_16BIT_READ(p_value + 2 + i * 8 + 48) << 16);
+        // val_h  = MB_ALIGN_PT_16BIT_READ(p_value + 4 + i * 8 + 48) | (MB_ALIGN_PT_16BIT_READ(p_value + 6 + i * 8 + 48) << 16);
+        // val_64 = (uint64_t)val_h << 32 | val_l;
+        // pEngRtHP->kvarhImp[i] = val_64 % (ENERGY_MAXNUM + 1);
+        
+        // /* 反向无功 */
+        // val_l  = MB_ALIGN_PT_16BIT_READ(p_value + 0 + i * 8 + 72) | (MB_ALIGN_PT_16BIT_READ(p_value + 2 + i * 8 + 72) << 16);
+        // val_h  = MB_ALIGN_PT_16BIT_READ(p_value + 4 + i * 8 + 72) | (MB_ALIGN_PT_16BIT_READ(p_value + 6 + i * 8 + 72) << 16);
+        // val_64 = (uint64_t)val_h << 32 | val_l;
+        // pEngRtHP->kvarhExp[i] = val_64 % (ENERGY_MAXNUM + 1);
+
+        // /* 视在 */
+        // val_l  = MB_ALIGN_PT_16BIT_READ(p_value + 0 + i * 8 + 96) | (MB_ALIGN_PT_16BIT_READ(p_value + 2 + i * 8 + 96) << 16);
+        // val_h  = MB_ALIGN_PT_16BIT_READ(p_value + 4 + i * 8 + 96) | (MB_ALIGN_PT_16BIT_READ(p_value + 6 + i * 8 + 96) << 16);
+        // val_64 = (uint64_t)val_h << 32 | val_l;
+        // pEngRtHP->kVAh[i] = val_64 % (ENERGY_MAXNUM + 1);
+    }
+    
+    return 0;
+}
+
+/*********************************************************************************************************
+** Function name:      mb_cmd_clearMultirateE2_handle 
+** Descriptions:        
+** input parameters:    NONE
+** output parameters:   NONE
+** Returned value:      NONE
+*********************************************************************************************************/
+static __inline int mb_write_eng_multi_handle(struct mb_comm_ctx_t *pCtx,  struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value)
+{
+    if (reg_num != 16)
+    {
+        return -1;
+    }
+
+    #define ENERGY_MAXNUM       (99999999999)
+
+    uint32_t val_l = 0;
+    uint32_t val_h = 0;
+    uint64_t val_64 = 0;
+
+    struct db_database_type         *pVmem     = pCtx->pvmem;
+    struct db_energy_multirate_type *pEngMulti = &pVmem->db_measurebase[0].db_measure.energy.multirate_hp;
+
+    for (uint8_t i = 0; i < 1; i++)
+    {
+        /* 正向有功 */
+        val_l  = MB_ALIGN_PT_16BIT_READ(p_value + 0 + i * 8 + 0) | (MB_ALIGN_PT_16BIT_READ(p_value + 2 + i * 8 + 0) << 16);
+        val_h  = MB_ALIGN_PT_16BIT_READ(p_value + 4 + i * 8 + 0) | (MB_ALIGN_PT_16BIT_READ(p_value + 6 + i * 8 + 0) << 16);
+        val_64 = (uint64_t)val_h << 32 | val_l;
+        pEngMulti->rate[i].kWhImp = val_64 % (ENERGY_MAXNUM + 1);
+        
+        /* 反向有功 */
+        val_l  = MB_ALIGN_PT_16BIT_READ(p_value + 0 + i * 8 + 8) | (MB_ALIGN_PT_16BIT_READ(p_value + 2 + i * 8 + 8) << 16);
+        val_h  = MB_ALIGN_PT_16BIT_READ(p_value + 4 + i * 8 + 8) | (MB_ALIGN_PT_16BIT_READ(p_value + 6 + i * 8 + 8) << 16);
+        val_64 = (uint64_t)val_h << 32 | val_l;
+        pEngMulti->rate[i].kWhExp = val_64 % (ENERGY_MAXNUM + 1);
+        
+        /* 正向无功 */
+        val_l  = MB_ALIGN_PT_16BIT_READ(p_value + 0 + i * 8 + 16) | (MB_ALIGN_PT_16BIT_READ(p_value + 2 + i * 8 + 16) << 16);
+        val_h  = MB_ALIGN_PT_16BIT_READ(p_value + 4 + i * 8 + 16) | (MB_ALIGN_PT_16BIT_READ(p_value + 6 + i * 8 + 16) << 16);
+        val_64 = (uint64_t)val_h << 32 | val_l;
+        pEngMulti->rate[i].kvarhImp = val_64 % (ENERGY_MAXNUM + 1);
+        
+        /* 反向无功 */
+        val_l  = MB_ALIGN_PT_16BIT_READ(p_value + 0 + i * 8 + 24) | (MB_ALIGN_PT_16BIT_READ(p_value + 2 + i * 8 + 24) << 16);
+        val_h  = MB_ALIGN_PT_16BIT_READ(p_value + 4 + i * 8 + 24) | (MB_ALIGN_PT_16BIT_READ(p_value + 6 + i * 8 + 24) << 16);
+        val_64 = (uint64_t)val_h << 32 | val_l;
+        pEngMulti->rate[i].kvarhExp = val_64 % (ENERGY_MAXNUM + 1);
+    }
+    
+    return 0;
+}
+#endif
 
 /*********************************************************************************************************
 ** Function name:      mb_cmd_clearAllUser_handle 

@@ -22,13 +22,12 @@
 #include <string.h>
 #include <time.h>
 
+#include "Rn7302.h"
 #include "algorithm_energy_multirate_hp.h"
 #include "db_cfg_user_multirate.h"
 #include "db_struct.h"
 #include "db_device.h"
 #include "algorithm_energy_remain.h"
-
-#define  ENERGY_MAXNUM             999999999
 
 /*
     复费率的[月日]、[时分]等时间相关的段，使用整型描述（1231， 即12月31日， 或者12时31分）
