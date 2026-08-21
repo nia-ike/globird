@@ -201,6 +201,7 @@ static const ST_REG_4XXXX_ATTR   reg_4x_section[] = {
     { (struct remap_Modbus_node*)&remapRealTimeDmd_meter1[0],                11200,     MB_SECTION_GET_REG_NUM(remapRealTimeDmd_meter1),            MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
               /* 最大需量 日月 在block中，分别为 11300 11500  */     
     { (struct remap_Modbus_node*)&remapRealTimeEnergyhp_meter1[0],           11700,     MB_SECTION_GET_REG_NUM(remapRealTimeEnergyhp_meter1),       MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
+    { (struct remap_Modbus_node*)&remapMultirateEnergy_meter1[0],            11900,     MB_SECTION_GET_REG_NUM(remapMultirateEnergy_meter1),        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
               /* 最值 在block中，分别为 13000 13400 */
               /* 谐波 在block中，分别为 13800 13850 13900 14300 */
         /* 配置数据 */
@@ -225,7 +226,7 @@ static const ST_REG_4XXXX_ATTR   reg_4x_section[] = {
     { (struct remap_Modbus_node*)&remapRealTimeDmd_meter2[0],                21200,     MB_SECTION_GET_REG_NUM(remapRealTimeDmd_meter2),            MB_TYPE_RAM,      RO ,     NULL,    NULL}, //         
               /* 最大需量 日月 在block中，分别为 21300 21500  */     
     { (struct remap_Modbus_node*)&remapRealTimeEnergyhp_meter2[0],           21700,     MB_SECTION_GET_REG_NUM(remapRealTimeEnergyhp_meter2),       MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
-    { (struct remap_Modbus_node*)&remapEnergyMultirate_meter2[0],            21900,     MB_SECTION_GET_REG_NUM(remapEnergyMultirate_meter2),        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
+    { (struct remap_Modbus_node*)&remapMultirateEnergy_meter2[0],            21900,     MB_SECTION_GET_REG_NUM(remapMultirateEnergy_meter2),        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
               /* 最值 在block中，分别为 23000 23400 */
               /* 谐波 在block中，分别为 23800 23850 23900 24300 */
         /* 配置数据 */
@@ -248,7 +249,7 @@ static const ST_REG_4XXXX_ATTR   reg_4x_section[] = {
     { (struct remap_Modbus_node*)&remapRealTimeDmd_meter3[0],                31200,     MB_SECTION_GET_REG_NUM(remapRealTimeDmd_meter3),            MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
               /* 最大需量 日月 在block中，分别为 11300 11500  */     
     { (struct remap_Modbus_node*)&remapRealTimeEnergyhp_meter3[0],           31700,     MB_SECTION_GET_REG_NUM(remapRealTimeEnergyhp_meter3),       MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
-    { (struct remap_Modbus_node*)&remapEnergyMultirate_meter3[0],            31900,     MB_SECTION_GET_REG_NUM(remapEnergyMultirate_meter3),        MB_TYPE_RAM,      RO ,     NULL,    NULL}, //
+    { (struct remap_Modbus_node*)&remapMultirateEnergy_meter3[0],            31900,     MB_SECTION_GET_REG_NUM(remapMultirateEnergy_meter3),        MB_TYPE_RAM,      RO ,     NULL,    NULL}, //
               /* 最值 在block中，分别为 31300 31700 */
               /* 谐波 在block中，分别为 33800 33850 33900 34300 */
         /* 配置数据 */
@@ -320,7 +321,6 @@ static ST_REG_4XXXX_ATTR_BLOCK reg_4x_block_sector[] = {
     /* METER 1 */
     { (struct remap_Modbus_block_node *)&remapMaxDmdDay_meter1[0],                    11300,      0,        MB_TYPE_RAM,      RO ,       NULL,	    NULL         },
     { (struct remap_Modbus_block_node *)&remapMaxDmdMonth_meter1[0],                  11500,      0,        MB_TYPE_RAM,      RO ,       NULL,	    NULL         },
-    { (struct remap_Modbus_block_node *)&remapEnergyMultirate_meter1[0],              11900,      0,        MB_TYPE_RAM,      RO ,       NULL,    NULL}, // 
 
     //    { (struct remap_Modbus_node*)&remapEnergyFourquadrant_meter1[0],                12100,      0,        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
 //    { (struct remap_Modbus_node*)&remapEnergyFundwave_meter1[0],                    12400,      0,        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
@@ -335,7 +335,6 @@ static ST_REG_4XXXX_ATTR_BLOCK reg_4x_block_sector[] = {
     /* METER 1 */
     { (struct remap_Modbus_block_node *)&remapMaxDmdDay_meter2[0],                    21300,      0,        MB_TYPE_RAM,      RO ,       NULL,	    NULL         },
     { (struct remap_Modbus_block_node *)&remapMaxDmdMonth_meter2[0],                  21500,      0,        MB_TYPE_RAM,      RO ,       NULL,	    NULL         },
-    { (struct remap_Modbus_block_node *)&remapEnergyMultirate_meter2[0],              21900,      0,        MB_TYPE_RAM,      RO ,       NULL,    NULL}, // 
 //    { (struct remap_Modbus_node*)&remapEnergyFourquadrant_meter2[0],                22100,      0,        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
 //    { (struct remap_Modbus_node*)&remapEnergyFundwave_meter2[0],                    22400,      0,        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
 //    { (struct remap_Modbus_node*)&remapEnergyRuning_meter2[0],                      22700,      0,        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
@@ -349,7 +348,6 @@ static ST_REG_4XXXX_ATTR_BLOCK reg_4x_block_sector[] = {
     /* METER 1 */
     { (struct remap_Modbus_block_node *)&remapMaxDmdDay_meter3[0],                    31300,      0,        MB_TYPE_RAM,      RO ,       NULL,	    NULL         },
     { (struct remap_Modbus_block_node *)&remapMaxDmdMonth_meter3[0],                  31500,      0,        MB_TYPE_RAM,      RO ,       NULL,	    NULL         },
-    { (struct remap_Modbus_block_node *)&remapEnergyMultirate_meter3[0],              31900,      0,        MB_TYPE_RAM,      RO ,       NULL,    NULL}, // 
 //    { (struct remap_Modbus_node*)&remapEnergyFourquadrant_meter3[0],                32100,      0,        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
 //    { (struct remap_Modbus_node*)&remapEnergyFundwave_meter3[0],                    32400,      0,        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
 //    { (struct remap_Modbus_node*)&remapEnergyRuning_meter3[0],                      32700,      0,        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 

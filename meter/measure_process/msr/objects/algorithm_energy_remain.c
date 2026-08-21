@@ -49,7 +49,7 @@ struct db_realtime_energy_type FundNetEnergy;
 ** Returned value:      0 - less than 0.001
                         1 -  >= 0.001
 *********************************************************************************************************/
-static int32_t energy_remain_handle(uint32_t *remain, uint32_t *net, uint32_t value, struct db_database_measure_base_type *pMeasureBase, uint32_t pt, uint32_t ct, int32_t startPQS)
+static int32_t energy_remain_handle(uint64_t *remain, uint64_t *net, uint32_t value, struct db_database_measure_base_type *pMeasureBase, uint32_t pt, uint32_t ct, int32_t startPQS)
 {
     uint64_t ValueTmp = 0, RemainTmp = 0, NetTmp = 0;
     struct db_cfg_user_para     *pCfgUser = &(pMeasureBase->db_cfg.user);
@@ -66,8 +66,13 @@ static int32_t energy_remain_handle(uint32_t *remain, uint32_t *net, uint32_t va
     {
         return 0;
     }
-    //△E电能增量异常处理
-    if(value > 64)
+    /* 
+        △E电能增量异常处理：
+        脉冲阈值(每s) = ((220V * 500A * 3 / 1000)) * 3600imp/kWh / 3600s = 330个脉冲
+        现msr_process的调度周期为250ms，按照10倍冗余脉冲阈值设计：
+        脉冲阈值(每250ms+10倍冗余) = 330 / 4 * 10 = 825个脉冲
+     */
+    if(value > 825)
     {
         *net = 0;
         return 0;

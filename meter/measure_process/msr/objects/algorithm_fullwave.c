@@ -44,6 +44,7 @@
 #include "algorithm_energy_runing.h"
 #include "algorithm_energy_multirate.h"
 #include "algorithm_energy_multirate_hp.h"
+#include "algorithm_energy_realtime_translate.h"
 #include "Rn7302_read.h"
 
 
@@ -61,16 +62,17 @@
 *********************************************************************************************************/
 int32_t rms_algorithm_fullwave(struct db_database_measure_base_type *pMeasure, struct db_basic_realtime_type *out, uint32_t pt, uint32_t ct)
 {
-    struct db_realtime_energy_type           *pRemainEnergy = &(pMeasure->db_measure.energy.remain_hp);
-    struct db_realtime_energy_type         *pRealtimeEnergy = &(pMeasure->db_measure.energy.realtime);
-	struct db_realtime_energy_type      *pRealtimeEnergy_hp = &(pMeasure->db_measure.energy.realtime_hp);
-    struct db_runing_energy_type                *pRunEnergy = &(pMeasure->db_measure.energy.runing_hp);
-    struct db_energy_multirate_type            *pMultEnergy = &(pMeasure->db_measure.energy.multirate);
-    struct db_energy_multirate_type         *pMultEnergy_hp = &(pMeasure->db_measure.energy.multirate_hp);
-    struct rn7302_emu                         *pEmuFullWave = get_EmuFull();
-    struct rn7302_emu_energy                *pEmuFullEnergy = get_EmuFullEnergy();
-    struct db_realtime_energy_type              *pNetEnergy = get_FullNetEnergy();
-    struct db_cfg_user_para     *pCfgUser = &(pMeasure->db_cfg.user);
+    struct db_realtime_energy_type           *pEngRemain     = &(pMeasure->db_measure.energy.remain_hp);
+    struct db_realtime_energy_type           *pEngRt         = &(pMeasure->db_measure.energy.realtime);
+	struct db_realtime_energy_type           *pEngRtHP       = &(pMeasure->db_measure.energy.realtime_hp);
+    struct db_runing_energy_type             *pEngRun        = &(pMeasure->db_measure.energy.runing_hp);
+    struct db_energy_multirate_type          *pEngMulti      = &(pMeasure->db_measure.energy.multirate);
+    struct db_energy_multirate_type          *pEngMultiHP    = &(pMeasure->db_measure.energy.multirate_hp);
+    struct rn7302_emu                        *pEmuFullWave   = get_EmuFull();
+    struct rn7302_emu_energy                 *pEmuFullEnergy = get_EmuFullEnergy();
+    struct db_realtime_energy_type           *pNetEnergy     = get_FullNetEnergy();
+    struct db_cfg_user_para                  *pCfgUser       = &(pMeasure->db_cfg.user);
+    struct db_energy_realtime_translate_type *pEngRtTrans    = &(pMeasure->db_measure.energy.realtime_translate);
 
     if((pCfgUser->base.PhaseAdjust1.value != 1) || (pCfgUser->base.PhaseAdjust2.value != 2) || (pCfgUser->base.PhaseAdjust3.value != 3))
     {
@@ -94,18 +96,21 @@ int32_t rms_algorithm_fullwave(struct db_database_measure_base_type *pMeasure, s
         rms_algorithm_phasevoltage_3p4w(   pMeasure,   out,     pEmuFullWave, pt,  1);
     }
 
-    rms_algorithm_current(        pMeasure,   out,     pEmuFullWave,  1, ct);
-    rms_algorithm_activepower(    pMeasure,   out,     pEmuFullWave, pt, ct);
-    rms_algorithm_reactivepower(  pMeasure,   out,     pEmuFullWave, pt, ct);
-    rms_algorithm_frequency(      pMeasure,   out,     pEmuFullWave,  1,  1);
-    rms_algorithm_powerfactor(    pMeasure,   out,             NULL,  1,  1);
-    rms_algorithm_apparentpower(  pMeasure,   out,     pEmuFullWave, pt, ct);
-    rms_algorithm_RemainEnergy(   pMeasure,   pRemainEnergy,  pEmuFullEnergy, pNetEnergy,  pt, ct);
-    rms_algorithm_RealtimeEnergy_hp( pMeasure, pRealtimeEnergy_hp, pNetEnergy, pt, ct);
-    rms_algorithm_RealtimeEnergy( pMeasure,   pRealtimeEnergy,    pRealtimeEnergy_hp,  pt, ct);
-    rms_algorithm_MultirateEnergy_hp(pMeasure, pMultEnergy_hp, pNetEnergy, pt, ct);
-    rms_algorithm_MultirateEnergy(pMeasure,   pMultEnergy,     pMultEnergy_hp,  pt, ct);
-    rms_algorithm_RuningEnergy_hp(pMeasure, pRunEnergy, pNetEnergy, pt, ct);
+    rms_algorithm_current              (  pMeasure,   out,         pEmuFullWave,   1,             ct);
+    rms_algorithm_activepower          (  pMeasure,   out,         pEmuFullWave,   pt,            ct);
+    rms_algorithm_reactivepower        (  pMeasure,   out,         pEmuFullWave,   pt,            ct);
+    rms_algorithm_frequency            (  pMeasure,   out,         pEmuFullWave,   1,             1);
+    rms_algorithm_powerfactor          (  pMeasure,   out,         NULL,           1,             1);
+    rms_algorithm_apparentpower        (  pMeasure,   out,         pEmuFullWave,   pt,            ct);
+
+    rms_algorithm_RemainEnergy         (  pMeasure,   pEngRemain,  pEmuFullEnergy, pNetEnergy,    pt, ct);
+
+    rms_algorithm_RealtimeEnergy_hp    (  pMeasure,   pEngRtHP,    pNetEnergy,     pt,            ct);
+    rms_algorithm_RealtimeEnergy       (  pMeasure,   pEngRt,      pEngRtHP,       pt,            ct);
+    rms_algorithm_MultirateEnergy_hp   (  pMeasure,   pEngMultiHP, pNetEnergy,     pt,            ct);
+    rms_algorithm_MultirateEnergy      (  pMeasure,   pEngMulti,   pEngMultiHP,    pt,            ct);
+    rms_algorithm_RuningEnergy_hp      (  pMeasure,   pEngRun,     pNetEnergy,     pt,            ct);
+    rms_algorithm_RealtimeEnergy_trans (  pMeasure,   pEngRtTrans, pEngRtHP,       pt,            ct);
     
     return 0;
 }

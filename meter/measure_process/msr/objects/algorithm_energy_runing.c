@@ -25,7 +25,6 @@
 #include "Rn7302.h"
 #include "algorithm_energy_remain.h"
 #include "algorithm_energy_runing.h"
-#define  ENERGY_MAXNUM             999999999
 
 /*********************************************************************************************************
 ** Function name:       AccumulateRuningEnergy
@@ -35,16 +34,16 @@
 ** output parameters:   none
 ** Returned value:      none
 *********************************************************************************************************/
-static int32_t AccumulateRuningEnergy(uint32_t *u64remain, uint32_t *real)
+static int32_t AccumulateRuningEnergy(uint64_t *u64remain, uint64_t *real)
 {
     uint64_t real_tmp;
 
-    real_tmp = (uint64_t)(*real);
+    real_tmp = *real;
     if(*u64remain > 0)
     {
-        real_tmp += (uint64_t)(*u64remain);
+        real_tmp += *u64remain;
         real_tmp %= (ENERGY_MAXNUM + 1);
-        *real = (uint32_t)real_tmp;
+        *real = real_tmp;
         return 0;
     }
     else

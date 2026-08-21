@@ -21,11 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
+#include "Rn7302.h"
 #include "algorithm_energy_multirate.h"
 
-/* ���������ֵ */
-#define ENERGY_MAXNUM           999999999	// 9999 9999.9    keep 0.1 kwh
 #define FACTOR                  100
 
 /*********************************************************************************************************
@@ -39,13 +37,13 @@
 ** output parameters:   NONE
 ** Returned value:      NONE
 *********************************************************************************************************/
-static int32_t AccumulateEnergy(uint32_t *hp, uint32_t* real)
+static int32_t AccumulateEnergy(uint64_t *hp, uint64_t* real)
 {
    uint64_t eng;
 
-   eng = (uint64_t)(*hp) / FACTOR;
-   eng %= (ENERGY_MAXNUM + 1); 
-   *real = (uint32_t)eng;
+   eng = *hp / FACTOR;
+   eng %= (ENERGY_MAXNUM_8D1 + 1); 
+   *real = eng;
 
    return 0;
 }
@@ -74,7 +72,6 @@ int32_t rms_algorithm_MultirateEnergy(struct db_database_measure_base_type *pMea
         AccumulateEnergy(&phpEnergy->rate[i].kvarhImp, &out->rate[i].kvarhImp );
         AccumulateEnergy(&phpEnergy->rate[i].kvarhExp, &out->rate[i].kvarhExp );
     }
-
 
     return 0;
 }

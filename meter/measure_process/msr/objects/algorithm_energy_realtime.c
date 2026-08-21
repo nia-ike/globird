@@ -29,7 +29,6 @@
 #include "algorithm_energy_realtime.h"
 
 
-/* ���������ֵ */
 #define FACTOR                  100
 
 /*********************************************************************************************************
@@ -43,12 +42,13 @@
 ** output parameters:   NONE
 ** Returned value:      NONE
 *********************************************************************************************************/
-static int32_t AccumulateEnergy(uint32_t *hp, uint32_t* real)
+static int32_t AccumulateEnergy(uint64_t *hp, uint64_t* real)
 {
    uint64_t eng;
 
-   eng = (uint64_t)(*hp) / FACTOR;
-   *real = (uint32_t)eng;
+   eng = *hp / FACTOR;
+   eng %= (ENERGY_MAXNUM_8D1 + 1);
+   *real = eng;
 
    return 0;
 }
@@ -86,13 +86,13 @@ int32_t rms_algorithm_RealtimeEnergy(struct db_database_measure_base_type    *pM
 
     if((pCfgUser->base.WiringMode.value & 0x03) == P3W4)
     {
-        out->kWhImp[3]   = (out->kWhImp[0]   + out->kWhImp[1]   + out->kWhImp[2]   ) ;
-        out->kWhExp[3]   = (out->kWhExp[0]   + out->kWhExp[1]   + out->kWhExp[2]   ) ;
-        out->kvarhImp[3] = (out->kvarhImp[0] + out->kvarhImp[1] + out->kvarhImp[2] ) ;
-        out->kvarhExp[3] = (out->kvarhExp[0] + out->kvarhExp[1] + out->kvarhExp[2] ) ;
-        out->kVAh[3]     = (out->kVAh[0]     + out->kVAh[1]     + out->kVAh[2]     ) ;
-        out->kWhTot[3]   = (out->kWhTot[0]   + out->kWhTot[1]   + out->kWhTot[2]   ) ;
-        out->kvarhTot[3] = (out->kvarhTot[0] + out->kvarhTot[1] + out->kvarhTot[2] ) ;
+        out->kWhImp[3]   = (out->kWhImp[0]   + out->kWhImp[1]   + out->kWhImp[2]   ) % (ENERGY_MAXNUM_8D1 + 1);
+        out->kWhExp[3]   = (out->kWhExp[0]   + out->kWhExp[1]   + out->kWhExp[2]   ) % (ENERGY_MAXNUM_8D1 + 1);
+        out->kvarhImp[3] = (out->kvarhImp[0] + out->kvarhImp[1] + out->kvarhImp[2] ) % (ENERGY_MAXNUM_8D1 + 1);
+        out->kvarhExp[3] = (out->kvarhExp[0] + out->kvarhExp[1] + out->kvarhExp[2] ) % (ENERGY_MAXNUM_8D1 + 1);
+        out->kVAh[3]     = (out->kVAh[0]     + out->kVAh[1]     + out->kVAh[2]     ) % (ENERGY_MAXNUM_8D1 + 1);
+        out->kWhTot[3]   = (out->kWhTot[0]   + out->kWhTot[1]   + out->kWhTot[2]   ) % (ENERGY_MAXNUM_8D1 + 1);
+        out->kvarhTot[3] = (out->kvarhTot[0] + out->kvarhTot[1] + out->kvarhTot[2] ) % (ENERGY_MAXNUM_8D1 + 1);
     }
 
     return 0;

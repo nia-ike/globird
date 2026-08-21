@@ -352,80 +352,171 @@ struct remap_Modbus_node remapSeg_realtime_meter1[] = {
 
 /* 
     实时电度 
-    由于所有电能已经从64位改成32位。 最大翻转电度为100W量程
-    因此不需要再分1位小数的电能。直接输出3位小数电能
+    - 保留原32位3位小数电能，表示范围6+3
+    - 增加1位小数电能，表示范围8+1
 */
 struct remap_Modbus_node  remapRealTimeEnergyhp_meter1[] = {
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kWhTot[3]             , REG_ORDER_LITTLE_EDIAN  ), // 0
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kWhTot[3]             , REG_ORDER_LITTLE_EDIAN  ), // 1
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kvarhTot[3]           , REG_ORDER_LITTLE_EDIAN  ), // 2
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kvarhTot[3]           , REG_ORDER_LITTLE_EDIAN  ), // 3
+    /* 32位6+3电能 */
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EPT,       REG_ORDER_LITTLE_EDIAN  ), // 0
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EPT,       REG_ORDER_LITTLE_EDIAN  ), // 1
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EQT,       REG_ORDER_LITTLE_EDIAN  ), // 2
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EQT,       REG_ORDER_LITTLE_EDIAN  ), // 3
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EPAImp,    REG_ORDER_LITTLE_EDIAN  ), // 4
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EPAImp,    REG_ORDER_LITTLE_EDIAN  ), // 5
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EPBImp,    REG_ORDER_LITTLE_EDIAN  ), // 6
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EPBImp,    REG_ORDER_LITTLE_EDIAN  ), // 7
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EPCImp,    REG_ORDER_LITTLE_EDIAN  ), // 8
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EPCImp,    REG_ORDER_LITTLE_EDIAN  ), // 9
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EPTImp,    REG_ORDER_LITTLE_EDIAN  ), // 10
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EPTImp,    REG_ORDER_LITTLE_EDIAN  ), // 11
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EPAExp,    REG_ORDER_LITTLE_EDIAN  ), // 12
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EPAExp,    REG_ORDER_LITTLE_EDIAN  ), // 13
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EPBExp,    REG_ORDER_LITTLE_EDIAN  ), // 14
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EPBExp,    REG_ORDER_LITTLE_EDIAN  ), // 15
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EPCExp,    REG_ORDER_LITTLE_EDIAN  ), // 16
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EPCExp,    REG_ORDER_LITTLE_EDIAN  ), // 17
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EPTExp,    REG_ORDER_LITTLE_EDIAN  ), // 18
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EPTExp,    REG_ORDER_LITTLE_EDIAN  ), // 19
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EQAImp,    REG_ORDER_LITTLE_EDIAN  ), // 20
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EQAImp,    REG_ORDER_LITTLE_EDIAN  ), // 21
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EQBImp,    REG_ORDER_LITTLE_EDIAN  ), // 22
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EQBImp,    REG_ORDER_LITTLE_EDIAN  ), // 23
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EQCImp,    REG_ORDER_LITTLE_EDIAN  ), // 24
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EQCImp,    REG_ORDER_LITTLE_EDIAN  ), // 25
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EQTImp,    REG_ORDER_LITTLE_EDIAN  ), // 26
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EQTImp,    REG_ORDER_LITTLE_EDIAN  ), // 27
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EQAExp,    REG_ORDER_LITTLE_EDIAN  ), // 28
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EQAExp,    REG_ORDER_LITTLE_EDIAN  ), // 29
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EQBExp,    REG_ORDER_LITTLE_EDIAN  ), // 30
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EQBExp,    REG_ORDER_LITTLE_EDIAN  ), // 31
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EQCExp,    REG_ORDER_LITTLE_EDIAN  ), // 32
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EQCExp,    REG_ORDER_LITTLE_EDIAN  ), // 33
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EQTExp,    REG_ORDER_LITTLE_EDIAN  ), // 34
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EQTExp,    REG_ORDER_LITTLE_EDIAN  ), // 35
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.ESA,       REG_ORDER_LITTLE_EDIAN  ), // 36
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.ESA,       REG_ORDER_LITTLE_EDIAN  ), // 37
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.ESB,       REG_ORDER_LITTLE_EDIAN  ), // 38
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.ESB,       REG_ORDER_LITTLE_EDIAN  ), // 39
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.ESC,       REG_ORDER_LITTLE_EDIAN  ), // 40
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.ESC,       REG_ORDER_LITTLE_EDIAN  ), // 41
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_translate.EST,       REG_ORDER_LITTLE_EDIAN  ), // 42
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_translate.EST,       REG_ORDER_LITTLE_EDIAN  ), // 43
+    /* 32位8+1电能 */
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kWhTot[3],           REG_ORDER_LITTLE_EDIAN  ), // 0
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kWhTot[3],           REG_ORDER_LITTLE_EDIAN  ), // 1
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kvarhTot[3],         REG_ORDER_LITTLE_EDIAN  ), // 2
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kvarhTot[3],         REG_ORDER_LITTLE_EDIAN  ), // 3
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kWhImp[0],           REG_ORDER_LITTLE_EDIAN  ), // 4
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kWhImp[0],           REG_ORDER_LITTLE_EDIAN  ), // 5
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kWhImp[1],           REG_ORDER_LITTLE_EDIAN  ), // 6
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kWhImp[1],           REG_ORDER_LITTLE_EDIAN  ), // 7
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kWhImp[2],           REG_ORDER_LITTLE_EDIAN  ), // 8
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kWhImp[2],           REG_ORDER_LITTLE_EDIAN  ), // 9
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kWhImp[3],           REG_ORDER_LITTLE_EDIAN  ), // 10
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kWhImp[3],           REG_ORDER_LITTLE_EDIAN  ), // 11
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kWhExp[0],           REG_ORDER_LITTLE_EDIAN  ), // 12
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kWhExp[0],           REG_ORDER_LITTLE_EDIAN  ), // 13
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kWhExp[1],           REG_ORDER_LITTLE_EDIAN  ), // 14
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kWhExp[1],           REG_ORDER_LITTLE_EDIAN  ), // 15
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kWhExp[2],           REG_ORDER_LITTLE_EDIAN  ), // 16
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kWhExp[2],           REG_ORDER_LITTLE_EDIAN  ), // 17
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kWhExp[3],           REG_ORDER_LITTLE_EDIAN  ), // 18
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kWhExp[3],           REG_ORDER_LITTLE_EDIAN  ), // 19
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kvarhImp[0],         REG_ORDER_LITTLE_EDIAN  ), // 20
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kvarhImp[0],         REG_ORDER_LITTLE_EDIAN  ), // 21
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kvarhImp[1],         REG_ORDER_LITTLE_EDIAN  ), // 22
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kvarhImp[1],         REG_ORDER_LITTLE_EDIAN  ), // 23
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kvarhImp[2],         REG_ORDER_LITTLE_EDIAN  ), // 24
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kvarhImp[2],         REG_ORDER_LITTLE_EDIAN  ), // 25
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kvarhImp[3],         REG_ORDER_LITTLE_EDIAN  ), // 26
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kvarhImp[3],         REG_ORDER_LITTLE_EDIAN  ), // 27
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kvarhExp[0],         REG_ORDER_LITTLE_EDIAN  ), // 28
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kvarhExp[0],         REG_ORDER_LITTLE_EDIAN  ), // 29
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kvarhExp[1],         REG_ORDER_LITTLE_EDIAN  ), // 30
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kvarhExp[1],         REG_ORDER_LITTLE_EDIAN  ), // 31
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kvarhExp[2],         REG_ORDER_LITTLE_EDIAN  ), // 32
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kvarhExp[2],         REG_ORDER_LITTLE_EDIAN  ), // 33
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kvarhExp[3],         REG_ORDER_LITTLE_EDIAN  ), // 34
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kvarhExp[3],         REG_ORDER_LITTLE_EDIAN  ), // 35
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kVAh[0],             REG_ORDER_LITTLE_EDIAN  ), // 36
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kVAh[0],             REG_ORDER_LITTLE_EDIAN  ), // 37
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kVAh[1],             REG_ORDER_LITTLE_EDIAN  ), // 38
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kVAh[1],             REG_ORDER_LITTLE_EDIAN  ), // 39
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kVAh[2],             REG_ORDER_LITTLE_EDIAN  ), // 40
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kVAh[2],             REG_ORDER_LITTLE_EDIAN  ), // 41
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime.kVAh[3],             REG_ORDER_LITTLE_EDIAN  ), // 42
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime.kVAh[3],             REG_ORDER_LITTLE_EDIAN  ), // 43
+};
 
-    /* A */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kWhImp[0]             , REG_ORDER_LITTLE_EDIAN  ), // 4
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kWhImp[0]             , REG_ORDER_LITTLE_EDIAN  ), // 5
-     /* B */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kWhImp[1]             , REG_ORDER_LITTLE_EDIAN  ), // 6
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kWhImp[1]             , REG_ORDER_LITTLE_EDIAN  ), // 7
-     /* C */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kWhImp[2]             , REG_ORDER_LITTLE_EDIAN  ), // 8
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kWhImp[2]             , REG_ORDER_LITTLE_EDIAN  ), // 9
-    /* Tot */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kWhImp[3]             , REG_ORDER_LITTLE_EDIAN  ), // 10
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kWhImp[3]             , REG_ORDER_LITTLE_EDIAN  ), // 11
-
-    /* A */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kWhExp[0]             , REG_ORDER_LITTLE_EDIAN  ), // 12
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kWhExp[0]             , REG_ORDER_LITTLE_EDIAN  ), // 13
-     /* B */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kWhExp[1]             , REG_ORDER_LITTLE_EDIAN  ), // 14
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kWhExp[1]             , REG_ORDER_LITTLE_EDIAN  ), // 15
-     /* C */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kWhExp[2]             , REG_ORDER_LITTLE_EDIAN  ), // 16
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kWhExp[2]             , REG_ORDER_LITTLE_EDIAN  ), // 17
-    /* Tot */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kWhExp[3]             , REG_ORDER_LITTLE_EDIAN  ), // 18
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kWhExp[3]             , REG_ORDER_LITTLE_EDIAN  ), // 19
-
-    /* A */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kvarhImp[0]           , REG_ORDER_LITTLE_EDIAN  ), // 20
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kvarhImp[0]           , REG_ORDER_LITTLE_EDIAN  ), // 21
-     /* B */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kvarhImp[1]           , REG_ORDER_LITTLE_EDIAN  ), // 22
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kvarhImp[1]           , REG_ORDER_LITTLE_EDIAN  ), // 23
-     /* C */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kvarhImp[2]           , REG_ORDER_LITTLE_EDIAN  ), // 24
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kvarhImp[2]           , REG_ORDER_LITTLE_EDIAN  ), // 25
-    /* Tot */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kvarhImp[3]           , REG_ORDER_LITTLE_EDIAN  ), // 26
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kvarhImp[3]           , REG_ORDER_LITTLE_EDIAN  ), // 27
-
-    /* A */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kvarhExp[0]           , REG_ORDER_LITTLE_EDIAN  ), // 28
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kvarhExp[0]           , REG_ORDER_LITTLE_EDIAN  ), // 29
-     /* B */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kvarhExp[1]           , REG_ORDER_LITTLE_EDIAN  ), // 30
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kvarhExp[1]           , REG_ORDER_LITTLE_EDIAN  ), // 31
-     /* C */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kvarhExp[2]           , REG_ORDER_LITTLE_EDIAN  ), // 32
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kvarhExp[2]           , REG_ORDER_LITTLE_EDIAN  ), // 33
-    /* Tot */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kvarhExp[3]           , REG_ORDER_LITTLE_EDIAN  ), // 34
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kvarhExp[3]           , REG_ORDER_LITTLE_EDIAN  ), // 35
-
-    /* A */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kVAh[0]               , REG_ORDER_LITTLE_EDIAN  ), // 36
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kVAh[0]               , REG_ORDER_LITTLE_EDIAN  ), // 37
-     /* B */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kVAh[1]               , REG_ORDER_LITTLE_EDIAN  ), // 38
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kVAh[1]               , REG_ORDER_LITTLE_EDIAN  ), // 39
-     /* C */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kVAh[2]               , REG_ORDER_LITTLE_EDIAN  ), // 40
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kVAh[2]               , REG_ORDER_LITTLE_EDIAN  ), // 41
-    /* Tot */
-    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.realtime_hp.kVAh[3]               , REG_ORDER_LITTLE_EDIAN  ), // 42
-    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.realtime_hp.kVAh[3]               , REG_ORDER_LITTLE_EDIAN  ), // 43
-
+/* 
+    复费率电能
+    - 增加1位小数电能，表示范围8+1
+*/
+struct remap_Modbus_node remapMultirateEnergy_meter1[] = {
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[0].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[0].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[0].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[0].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[0].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[0].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[0].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[0].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[1].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[1].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[1].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[1].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[1].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[1].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[1].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[1].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[2].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[2].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[2].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[2].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[2].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[2].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[2].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[2].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[3].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[3].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[3].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[3].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[3].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[3].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[3].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[3].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[4].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[4].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[4].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[4].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[4].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[4].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[4].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[4].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[5].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[5].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[5].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[5].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[5].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[5].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[5].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[5].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[6].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[6].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[6].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[6].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[6].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[6].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[6].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[6].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[7].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[7].kWhImp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[7].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[7].kWhExp,     REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[7].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[7].kvarhImp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_CD(db_measurebase[0].db_measure.energy.multirate.rate[7].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
+    REG_READ_ALIGN_U32_AB(db_measurebase[0].db_measure.energy.multirate.rate[7].kvarhExp,   REG_ORDER_LITTLE_EDIAN  ),
 };
 
 
@@ -761,14 +852,6 @@ struct remap_Modbus_block_node  remapExtremeDataMonth_meter1[] = {
 
 struct remap_Modbus_block_node  remapExtremeDataYear_meter1[] = {
     REG_READ_ALIGN_BLOCK(db_measurebase[0].db_measure.statistical.extremum.year, struct db_extremum_basic_type, REG_ORDER_LITTLE_EDIAN),
-};
-
-/*
-    复费率电能
-    块映射
-*/
-struct remap_Modbus_block_node remapEnergyMultirate_meter1[] = {
-    REG_READ_ALIGN_BLOCK (db_measurebase[0].db_measure.energy.multirate                         , struct db_energy_multirate_type, REG_ORDER_LITTLE_EDIAN), // 0
 };
 
 

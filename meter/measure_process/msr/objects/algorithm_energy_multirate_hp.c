@@ -383,14 +383,14 @@ static struct db_cfg_multirate_unit_type *multirate_special_unit_find(struct db_
 ** output parameters:   none
 ** Returned value:      none
 *********************************************************************************************************/
-static int32_t multirate_accumulate(uint32_t *u32remain, uint32_t *real)
+static int32_t multirate_accumulate(uint64_t *u64remain, uint64_t *real)
 {
     uint64_t real_tmp;
 
     real_tmp = *real;
-    if(*u32remain > 0)
+    if(*u64remain > 0)
     {
-        real_tmp += *u32remain;
+        real_tmp += *u64remain;
         real_tmp %= (ENERGY_MAXNUM + 1);
         *real = real_tmp;
         return 0;

@@ -29,10 +29,6 @@
 #include "algorithm_energy_realtime.h"
 
 
-/* ���������ֵ */
-#define ENERGY_MAXNUM           999999999   //      keep     .001 kwh
-
-
 /*********************************************************************************************************
 ** Function name:       Rn7302ReadEnergy
 ** Descriptions:        
@@ -44,16 +40,16 @@
 ** output parameters:   NONE
 ** Returned value:      NONE
 *********************************************************************************************************/
-static int32_t AccumulateEnergy(uint32_t *net, uint32_t* real)
+static int32_t AccumulateEnergy(uint64_t *net, uint64_t* real)
 {
     uint64_t eng = 0;
-    eng = (uint64_t)(*real);
+    eng = *real;
    
     if(*net > 0)
     {
-        eng += (uint64_t)(*net);
+        eng += *net;
         eng %= (ENERGY_MAXNUM + 1); 
-        *real = (uint32_t)eng;
+        *real = eng;
         return 0;
     }
     else

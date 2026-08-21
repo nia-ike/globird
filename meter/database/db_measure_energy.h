@@ -236,31 +236,40 @@ enum
 //实时电度
 struct db_realtime_energy_type
 {
-    uint32_t kWhImp[PHASE_NUM];       //ABC总正向有功    
-    uint32_t kWhExp[PHASE_NUM];       //ABC总反向有功    
-    uint32_t kvarhImp[PHASE_NUM];     //ABC总正向无功    
-    uint32_t kvarhExp[PHASE_NUM];     //ABC总反向无功    
-    uint32_t kVAh[PHASE_NUM];         //ABC合相视在电度   
-    uint32_t kWhTot[PHASE_NUM];       //总有功电度
-    uint32_t kvarhTot[PHASE_NUM];     //总无功电度
+    uint64_t kWhImp[PHASE_NUM];       //ABC总正向有功    
+    uint64_t kWhExp[PHASE_NUM];       //ABC总反向有功    
+    uint64_t kvarhImp[PHASE_NUM];     //ABC总正向无功    
+    uint64_t kvarhExp[PHASE_NUM];     //ABC总反向无功    
+    uint64_t kVAh[PHASE_NUM];         //ABC合相视在电度   
+    uint64_t kWhTot[PHASE_NUM];       //总有功电度
+    uint64_t kvarhTot[PHASE_NUM];     //总无功电度
 };
 
-
-/*
-    实时电度组的集合  双向电度数据结构
-*/
-struct db_realtime_energy_high_type
+//实时电度扩展，用于转换成32位的6+3或8+1电能，供modbus读取
+struct db_energy_realtime_translate_type
 {
-    uint32_t HkWhImp[PHASE_NUM];            //输入有功电度
-    uint32_t HkWhExp[PHASE_NUM];            //输出有功电度
-    uint32_t HkWhTot[PHASE_NUM];            //总有功电度
-    uint32_t HkvarhImp[PHASE_NUM];          //输入无功电度
-    uint32_t HkvarhExp[PHASE_NUM];          //输出无功电度
-    uint32_t HkvarhTot[PHASE_NUM];          //总无功电度
-    uint32_t HkVAh[PHASE_NUM];              //总视在电度
-
-    uint32_t HkWhNetVal[PHASE_NUM];         //有功电度净值
-    uint32_t HkvarhNetVal[PHASE_NUM];       //无功电度净值
+    uint32_t EPT;
+    uint32_t EQT;
+    uint32_t EPAImp;
+    uint32_t EPBImp;
+    uint32_t EPCImp;
+    uint32_t EPTImp;
+    uint32_t EPAExp;
+    uint32_t EPBExp;
+    uint32_t EPCExp;
+    uint32_t EPTExp;
+    uint32_t EQAImp;
+    uint32_t EQBImp;
+    uint32_t EQCImp;
+    uint32_t EQTImp;
+    uint32_t EQAExp;
+    uint32_t EQBExp;
+    uint32_t EQCExp;
+    uint32_t EQTExp;
+    uint32_t ESA;
+    uint32_t ESB;
+    uint32_t ESC;
+    uint32_t EST;
 };
 
 
@@ -283,10 +292,10 @@ struct db_energy_fourquadrant_type
 /* 复费率电度 */
 struct db_energy_multirate_uint
 {
-    uint32_t kWhImp;          // 复费率有功电度
-    uint32_t kWhExp;          // 复费率有功电度
-    uint32_t kvarhImp;        // 复费率无功电度
-    uint32_t kvarhExp;        // 复费率无功电度
+    uint64_t kWhImp;          // 复费率有功电度
+    uint64_t kWhExp;          // 复费率有功电度
+    uint64_t kvarhImp;        // 复费率无功电度
+    uint64_t kvarhExp;        // 复费率无功电度
 };
 
 struct db_energy_multirate_type
@@ -382,32 +391,32 @@ struct db_energy_co2_type
 /* 负载运行电度 */
 struct db_runing_energy_type
 {
-    uint32_t kWhImp[PHASE_NUM];       //ABC总正向有功    
-    uint32_t kWhExp[PHASE_NUM];       //ABC总反向有功    
-    uint32_t kvarhImp[PHASE_NUM];     //ABC总正向无功    
-    uint32_t kvarhExp[PHASE_NUM];     //ABC总反向无功    
-    uint32_t kVAh[PHASE_NUM];         //ABC合相视在电度   
-    uint32_t kWhTot[PHASE_NUM];       //总有功电度
-    uint32_t kvarhTot[PHASE_NUM];     //总无功电度
+    uint64_t kWhImp[PHASE_NUM];       //ABC总正向有功    
+    uint64_t kWhExp[PHASE_NUM];       //ABC总反向有功    
+    uint64_t kvarhImp[PHASE_NUM];     //ABC总正向无功    
+    uint64_t kvarhExp[PHASE_NUM];     //ABC总反向无功    
+    uint64_t kVAh[PHASE_NUM];         //ABC合相视在电度   
+    uint64_t kWhTot[PHASE_NUM];       //总有功电度
+    uint64_t kvarhTot[PHASE_NUM];     //总无功电度
 };
 
 
 /****************************************** 计量类电能型数据结构体集合 *****************************************/
 struct db_measure_energy_type
 {
-    struct db_realtime_energy_type      realtime_hp;    // high precision . 3 decimal     USE  modbus  32bit
-    struct db_realtime_energy_type      remain_hp;         // high precision
-    struct db_realtime_energy_type      realtime;
-
-    struct db_realtime_energy_type      fundwave;
-    struct db_realtime_energy_type      fundwave_remain;
-    struct db_energy_fourquadrant_type  fourquadrant;
-    struct db_energy_multirate_type     multirate;
-    struct db_energy_multirate_type     multirate_hp;
-    struct db_energy_multirate_running_status_t multirate_status;
-    struct db_energy_history_type       history;
-    struct db_energy_co2_type           co2;
-    struct db_runing_energy_type        runing_hp;
+    struct db_realtime_energy_type              realtime_hp;        // 实时电能：8+3
+    struct db_realtime_energy_type              remain_hp;          // 剩余电能
+    struct db_realtime_energy_type              realtime;           // 实时电能：8+1
+    struct db_realtime_energy_type              fundwave;           // 基波电能：8+1
+    struct db_realtime_energy_type              fundwave_remain;    // 基波剩余电能：8+1
+    struct db_energy_fourquadrant_type          fourquadrant;       // 四象限电能：8+1
+    struct db_energy_multirate_type             multirate;          // 多费率电能：8+1
+    struct db_energy_multirate_type             multirate_hp;       // 多费率电能：8+3
+    struct db_energy_multirate_running_status_t multirate_status;   // 多费率运行状态
+    struct db_energy_history_type               history;            // 历史电能：8+1
+    struct db_energy_co2_type                   co2;                // 碳排放电能：8+1
+    struct db_runing_energy_type                runing_hp;          // 运行电能：8+3
+    struct db_energy_realtime_translate_type    realtime_translate; // 实时电能：6+3，用于modbus读取
 };
 /*************************************************************************************************************/
 
