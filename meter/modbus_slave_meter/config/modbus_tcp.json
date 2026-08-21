@@ -1,0 +1,26 @@
+{
+    "Param":{
+        "Checked":0,
+        "IP":"192.168.13.64",
+        "Port":502,
+        "SlaveId":1,
+        "RegType":0,
+        "RegContent":"1234567890abcdef"
+    },
+    "version":"V1.0.0",
+    "info":{
+        "help":"meter's modbus setting. now, just can do the remap for modbus register!"
+    },
+    "setting":{
+        "custom_reg":[
+            {"fw_addr":0, "fw_type":13, "addr":10000, "origin_type":9, "kFactor":0.01, "name":"Ua"},
+            {"fw_addr":1, "fw_type":13, "addr":10002, "origin_type":9, "kFactor":0.01, "name":"Ub"},
+            {"fw_addr":2, "fw_type":13, "addr":10004, "origin_type":9, "kFactor":0.01, "name":"Uc"},
+            {"fw_addr":3, "fw_type":13, "addr":10006, "origin_type":9, "kFactor":0.01, "name":"VlnAvg"},
+            {"fw_addr":4, "fw_type":13, "addr":10008, "origin_type":9, "kFactor":0.01, "name":"Vab"},
+            {"fw_addr":5, "fw_type":13, "addr":10010, "origin_type":9, "kFactor":0.01, "name":"Vbc"},
+            {"fw_addr":6, "fw_type":13, "addr":10012, "origin_type":9, "kFactor":0.01, "name":"Vca"},
+            {"fw_addr":7, "fw_type":13, "addr":10014, "origin_type":9, "kFactor":0.01, "name":"VllAvg"}
+        ]
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "version":"V1.0.0",
+    "info":{
+        "help":"meter's multirate factory setting.",
+        "explain":{
+            "?switchtime":"2套费率切换. switchtime前为旧费率， switchtime后为新费率.unix 格式, "
+        }
+    },
+    "setting":{
+        "switchtime":0,
+        "schemeinfo":[
+            {"schemeid":0,  "cfg_file":"/userdata/config/meter/meter1/meter_cfg_user_multirate_scheme1.json"},
+            {"schemeid":1,  "cfg_file":"/userdata/config/meter/meter1/meter_cfg_user_multirate_scheme2.json"}
+        ]
+    }
+}

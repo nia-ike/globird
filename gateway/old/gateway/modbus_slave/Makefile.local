@@ -1,0 +1,5 @@
+# TASO1302 产品私有，禁止被 TASO1000 同步覆盖/删除
+# 链入电表消息事件 API，并保证无 __has_include 时仍能加载 local 头
+
+CFLAGS  += -DMB_HAS_PRODUCT_CFG_LOCAL -I../../meter/database/
+SOURCES += ../../meter/database/db_msgevent_api

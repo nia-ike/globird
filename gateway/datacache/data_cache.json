@@ -1,0 +1,14 @@
+{
+  "attr": {
+    "checked": 1,
+    "inv_time": 300,
+    "max_items": 8192,
+    "max_rows": 2016,
+    "max_alarm_nums": 256,
+    "mode": "roll",
+    "high_mb": 10,
+    "low_mb": 9,
+    "history_days": 8,
+    "history_path": "/userdata/history"
+  }
+}

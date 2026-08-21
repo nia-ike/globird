@@ -1,0 +1,67 @@
+{
+    "version":"V1.0.0",
+    "info":{
+        "help":"meter's user setting. customer can change them!"
+    },
+    "setting":{
+        "base":[
+            {"name":"PassWord",		"Val":   1,	   "ValDef":  	  1,    "Max":9, 	        "Min": 0},
+            {"name":"Addr",         "Val":   1,    "ValDef":      1,    "Max":247, 	        "Min": 1},
+            {"name":"BaudRate",     "Val":115200,  "ValDef":   9600,    "Max":115200,        "Min": 1200},
+            {"name":"CharSize",     "Val":   8,    "ValDef":      8,    "Max":8, 	        "Min": 5},
+            {"name":"ParityBit",    "Val":   0,    "ValDef":      0,    "Max":2, 	        "Min": 0},
+            {"name":"StopBit",      "Val":   1,    "ValDef":      1,    "Max":2, 	        "Min": 1},
+            {"name":"WiringMode",   "Val":   0,    "ValDef":      0,    "Max":1, 	        "Min": 0},
+            {"name":"PT",           "Val": 100,    "ValDef":    100,    "Max":1000000,       "Min": 100},
+            {"name":"CT",           "Val": 100,    "ValDef":    100,    "Max":10000000,      "Min": 100},
+            {"name":"RelayMode",    "Val":   1,    "ValDef":      1,    "Max":1, 	        "Min": 0},
+            {"name":"PhaseAdjust1", "Val":   1,    "ValDef":      1,    "Max":3, 	        "Min": 1},
+            {"name":"PhaseAdjust2", "Val":   2,    "ValDef":      2,    "Max":3, 	        "Min": 1},
+            {"name":"PhaseAdjust3", "Val":   3,    "ValDef":      3,    "Max":3, 	        "Min": 1},
+            {"name":"Language",     "Val":   0,    "ValDef":      0,    "Max":1, 	        "Min": 0}
+        ],
+        "pulse":[
+            {"name":"checked",                "Val":  1,	 "ValDef":	   1,	 "Max":    1,     "Min": 0},
+            {"name":"pulse[0].mode",          "Val":   0,    "ValDef":     0,    "Max":    1,     "Min": 0},
+            {"name":"pulse[0].constant",      "Val":3600,    "ValDef":  3600,    "Max": 9999,     "Min": 1},
+            {"name":"pulse[0].wide",          "Val":  80,    "ValDef":    80,    "Max":  100,     "Min":50},
+            {"name":"pulse[1].mode",          "Val":   1,    "ValDef":     1,    "Max":    1,     "Min": 0},
+            {"name":"pulse[1].constant",      "Val":3600,    "ValDef":  3600,    "Max": 9999,     "Min": 1},
+            {"name":"pulse[1].wide",          "Val":  80,    "ValDef":    80,    "Max":  100,     "Min": 50}
+        ],
+        "demand":[
+            {"name":"mode",       "Val":   0,     "ValDef":     0,    "Max":     1,    "Min": 0},
+            {"name":"window",     "Val":  15,     "ValDef":    15,    "Max":    60,    "Min": 1},
+            {"name":"slip_window", "Val":   1,     "ValDef":     1,    "Max":     5,    "Min": 1}
+        ],
+        "loadrun":[
+            {"name":"obj",       "Val":   0,     "ValDef":     0,    "Max":         3,    "Min": 0},
+            {"name":"over_I",    "Val":   0,     "ValDef":     0,    "Max":1000000000,    "Min": 0},
+            {"name":"over_V",    "Val":   0,     "ValDef":     0,    "Max":1000000000,    "Min": 0},
+            {"name":"under_V",   "Val":   0,     "ValDef":     0,    "Max":1000000000,    "Min": 0},
+            {"name":"over_Ptot", "Val":   0,     "ValDef":     0,    "Max":1000000000,    "Min": 0}
+        ],        
+        "refer":[
+            {"name":"refer_voltage",       "Val":22000,     "ValDef": 22000,    "Max": 1000000000,    "Min": 0},
+            {"name":"refer_current",       "Val": 5000,     "ValDef":  5000,    "Max": 1000000000,    "Min": 0},
+            {"name":"refer_frequency",     "Val": 5000,     "ValDef":  5000,    "Max": 1000000000,    "Min": 0},
+            {"name":"refer_Temperature",   "Val": 5000,     "ValDef":  5000,    "Max": 1000000000,    "Min": 0}
+        ],
+        "network":[
+            {"name":"ip_addr",  "Val":168438493,     "ValDef":3230269698,    "Max":4294967295,    "Min": 1},
+            {"name":"subnet",   "Val":4294967040,     "ValDef":4294967040,    "Max":4294967295,    "Min": 1},
+            {"name":"gateway",  "Val":168438526,     "ValDef":3230269697,    "Max":4294967295,    "Min": 1},
+            {"name":"dns",      "Val":134744072,     "ValDef":134744072,    "Max":4294967295,    "Min": 1},
+            {"name":"dhcp",     "Val":0,     		  "ValDef":0,    		 "Max":1,    "Min": 0}
+        ],
+        "runing_energy": [
+            {"name": "setPtot", "Val": 0, "ValDef": 0, "Max": 99999999, "Min": 0},
+            {"name": "setQtot", "Val": 0, "ValDef": 0, "Max": 99999999, "Min": 0},
+            {"name": "setStot", "Val": 0, "ValDef": 0, "Max": 99999999, "Min": 0}
+        ],
+        "vendor": [
+            {"name": "vendor", "Val": 0, "ValDef": 0, "Max": 65536, "Min": 0}
+        ]
+    }
+}
+

@@ -1,0 +1,90 @@
+{
+    "desc": {
+        "version": "v1.0-20250709",
+        "protocol_group": "Standard-protocol",
+        "protocol": "opc_ua",
+        "manufacturer": "Demo",
+        "model": "OpcUaClientDemo"
+    },
+    "devName": "OpcUaDemo",
+    "info": {
+        "help": "OPC UA 南向采集。CommStatus(id=0) 为通讯虚拟点，由采集进程按连接状态维护，不读 OPC UA 节点；ns/n/s 可留空。"
+    },
+    "active_strategy": null,
+    "attr": {
+        "checked": 1,
+        "sn": "OPCUA-DEMO-001",
+        "model": "OpcUaDemo",
+        "protocol": "opc_ua",
+        "name": "OPC UA Demo Device",
+        "function": "demo",
+        "pkg_request": {
+            "pkt_num": 0,
+            "pkt_req_info": []
+        },
+        "node": {
+            "node_num": 3,
+            "node_attr": [
+                {
+                    "id": 0,
+                    "name": "CommStatus",
+                    "datattr": 1,
+                    "catagory": 170,
+                    "kfactor": 1,
+                    "unit": "",
+                    "ns": 0,
+                    "n": 0,
+                    "s": ""
+                },
+                {
+                    "id": 1,
+                    "datattr": 0,
+                    "name": "A相电压",
+                    "unit": "",
+                    "kfactor": 1,
+                    "bfactor": 0,
+                    "ExDesc": "",
+                    "ns": 1,
+                    "n": 50397185,
+                    "s": "",
+                    "range_checked": 0,
+                    "range_min": 0,
+                    "range_max": 100,
+                    "lua_script": "",
+                    "catagory": 0
+                },
+                {
+                    "id": 2,
+                    "datattr": 0,
+                    "name": "频率",
+                    "unit": "",
+                    "kfactor": 1,
+                    "bfactor": 0,
+                    "ExDesc": "",
+                    "ns": 1,
+                    "n": 50397214,
+                    "s": "",
+                    "range_checked": 0,
+                    "range_min": 0,
+                    "range_max": 100,
+                    "lua_script": "",
+                    "catagory": 0
+                }
+            ]
+        },
+        "control": {
+            "control_num": 0,
+            "control_attr": []
+        },
+        "strategy_points": {
+            "group": []
+        },
+        "alarm": null,
+        "extend_param": {
+            "poll_interval_ms": 1000,
+            "username": "",
+            "password": "",
+            "debug_enabled": false
+        }
+    }
+}

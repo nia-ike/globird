@@ -1,0 +1,85 @@
+{
+  "schema_version": 3,
+  "global": {
+    "tick_interval_ms": 2000,
+    "event_debounce_ms": 200,
+    "preemptive_enabled": true,
+    "runtime_dir": "/var/run/netmgr",
+    "log_level": "info"
+  },
+  "health": {
+    "down_threshold": 3,
+    "up_threshold": 2,
+    "link_fail_fast_ticks": 2,
+    "probe_timeout_ms": 2000,
+    "probe_jitter_pct": 20
+  },
+  "interfaces": [
+    {
+      "id": "eth-lan",
+      "ifname": "eth0",
+      "type": "ethernet",
+      "enabled": true,
+      "priority": 10,
+      "cost_class": "unmetered",
+      "probe": {
+        "interval_ms": 15000,
+        "targets": ["$GATEWAY", "8.8.8.8"],
+        "auto_gateway": true
+      }
+    },
+    {
+      "id": "wifi-wan",
+      "ifname": "wlan0",
+      "type": "wifi_sta",
+      "enabled": true,
+      "priority": 20,
+      "cost_class": "unmetered",
+      "managed_mode": "hybrid",
+      "conn": {
+        "ssid": "410",
+        "psk": "12345678",
+        "auto_reconnect": true,
+        "max_retry": 10,
+        "recover_delays_sec": [3, 10, 30, 60]
+      },
+      "probe": {
+        "interval_ms": 20000,
+        "standby_multiplier": 2,
+        "targets": ["8.8.8.8", "1.1.1.1"]
+      }
+    },
+    {
+      "id": "lte-backup",
+      "ifname": "ppp0",
+      "type": "ppp",
+      "enabled": true,
+      "priority": 30,
+      "cost_class": "metered",
+      "managed_mode": "hybrid",
+      "conn": {
+        "device": "/dev/ttyUSB7",
+        "apn": "om2mOPTUS",
+        "user": "",
+        "password": "",
+        "dial_number": "*99#",
+        "usepeerdns": true,
+        "lcp_echo_interval": 30,
+        "lcp_echo_failure": 3,
+        "recover_delays_sec": [5, 15, 60, 300],
+        "modem_reset_script": "/ech/script/lte_ctrl"
+      },
+      "probe": {
+        "interval_ms": 120000,
+        "standby_multiplier": 4,
+        "targets": ["8.8.8.8"]
+      },
+      "recover": {
+        "level1_cmd": "kill -HUP $(cat /var/run/ppp0.pid)",
+        "level2_cmd": "/ech/etc/init.d/ppp restart",
+        "level3_cmd": "/ech/etc/init.d/lte_ctrl softrst",
+        "level4_cmd": "/ech/etc/init.d/lte_ctrl hardrst"
+      }
+    }
+  ]
+}

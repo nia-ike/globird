@@ -1,0 +1,46 @@
+{
+    "Name": "opc_ua1",
+    "info": {
+        "help": "OPC UA 采集通道示例。endpoint 由 common.dev 指定，格式 host:port"
+    },
+    "attr": {
+        "checked": 1,
+        "common": {
+            "id": 1,
+            "mode": "poll",
+            "link": "tcp",
+            "dev": "192.168.1.100:4840",
+            "serial": {
+                "baud": 9600,
+                "databit": 8,
+                "parity": "N",
+                "stopbit": 1
+            },
+            "repeat": 1,
+            "inv_time": 1000,
+            "recvTimeout": 3000,
+            "framing_time": 0,
+            "local_port": 0
+        },
+        "devices": {
+            "num": 1,
+            "attr": [
+                {
+                    "logic_id": "1",
+                    "phy_id": "1",
+                    "protocol": "opc_ua",
+                    "dll": "",
+                    "cfg_file": "/userdata/config/sample/devices/C1_D1_opc_ua.json",
+                    "desc": {
+                        "cabinetNo": "OPCUA01",
+                        "name": "OPC UA Demo",
+                        "model": "OpcUaDemo",
+                        "code": "",
+                        "capacity": 0,
+                        "impedance": 0
+                    }
+                }
+            ]
+        }
+    }
+}

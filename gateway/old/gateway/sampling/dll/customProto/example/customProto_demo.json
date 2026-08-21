@@ -1,0 +1,89 @@
+{
+  "desc": {
+    "version": "v1.0",
+    "protocol_group": "Standard-protocol",
+    "protocol": "customProto",
+    "manufacturer": "example",
+    "model": "raw-hex-demo"
+  },
+  "devName": "customProto-demo",
+  "info": {
+    "help": "Raw TX request-response. Match fields default NONE (direct parse)."
+  },
+  "attr": {
+    "checked": 1,
+    "sn": " ",
+    "model": " ",
+    "protocol": "customProto",
+    "name": "meter",
+    "function": "custom",
+    "extend_param": {
+      "expect_len": 0,
+      "frame_header": "",
+      "checksum": "none",
+      "checksum_from": 0,
+      "checksum_to": -2,
+      "checksum_store": -2,
+      "checksum_endian": "le",
+      "addr_offset": -1,
+      "addr_value": 0
+    },
+    "pkg_request": {
+      "pkt_num": 1,
+      "pkt_req_info": [
+        {
+          "pkt_id": 1,
+          "tx": "01 03 00 00 00 02 C4 0B"
+        }
+      ]
+    },
+    "node": {
+      "node_num": 2,
+      "node_attr": [
+        {
+          "datattr": 1,
+          "name": "CommStatus",
+          "unit": "",
+          "pkt_id": 0,
+          "bitfield": 0,
+          "bitnum": 0,
+          "datatype": 0,
+          "kfactor": 1,
+          "pt_flag1": 1,
+          "ct_flag2": 1,
+          "catagory": 170,
+          "id": 0,
+          "bfactor": 0,
+          "dataoffset": 0
+        },
+        {
+          "id": 1,
+          "datattr": 0,
+          "name": "DemoValue",
+          "unit": "",
+          "pkt_id": 1,
+          "dataoffset": 3,
+          "datatype": 1,
+          "bitfield": 0,
+          "bitnum": 1,
+          "kfactor": 1,
+          "bfactor": 0,
+          "pt_flag1": 1,
+          "ct_flag2": 1,
+          "catagory": 0,
+          "range_checked": 0,
+          "range_min": 0,
+          "range_max": 0
+        }
+      ]
+    },
+    "control": {
+      "control_num": 0,
+      "control_attr": []
+    },
+    "alarm": {
+      "alarm_num": 0,
+      "alarm_attr": []
+    }
+  }
+}

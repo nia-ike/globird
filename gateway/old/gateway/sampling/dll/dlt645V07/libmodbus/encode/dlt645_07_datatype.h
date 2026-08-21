@@ -1,0 +1,74 @@
+#ifndef _DATA_TYPE_H
+#define _DATA_TYPE_H
+
+#include <stdint.h>
+#include "dlt645_07_datatype.h"
+
+
+union DataType_u32Tof32
+{
+    uint32_t    u32Val;
+    float       f32Val;
+};
+
+union DataType_u64Tof64
+{
+    uint64_t    u64Val;
+    double       f64Val;
+};
+
+
+/* 数据类型定义 */
+enum DataType_Data
+{
+    /*
+        
+          16bits   =>  | BYTE1 | BYTE0 |
+
+          32bits   =>  | BYTE3 | BYTE2 | BYTE1 | BYTE0 |   
+
+
+    */
+    DATATYPE_DLT645_XXXXXX_XX,
+    DATATYPE_DLT645_XXX_X,
+    DATATYPE_DLT645_XXX_XXX,
+    DATATYPE_DLT645_XX_XXXX,
+    DATATYPE_DLT645_X_XXX,
+    DATATYPE_DLT645_XX_XX,
+    DATATYPE_DLT645_XXXXXXXX,
+    DATATYPE_DLT645_XX,
+    DATATYPE_DLT645_XXX,
+    DATATYPE_DLT645_XXXX,
+    DATATYPE_DLT645_YYMMDDHHMM,
+
+    DATATYPE_DLT645_S_XXXXXX_XX,
+    DATATYPE_DLT645_S_XXX_X,
+    DATATYPE_DLT645_S_XXX_XXX,
+    DATATYPE_DLT645_S_XX_XXXX,
+    DATATYPE_DLT645_S_X_XXX,
+    DATATYPE_DLT645_S_XX_XX,
+    DATATYPE_DLT645_S_XXXXXXXX,
+    DATATYPE_DLT645_S_XX,
+    DATATYPE_DLT645_S_XXX,
+    DATATYPE_DLT645_S_XXXX,
+    DATATYPE_DLT645_S_XXXXXXXXXX,
+    DATATYPE_DLT645_YYMMDDHHMMSS,
+    DATATYPE_DLT645_YYMMDDHHMM_UNIX,
+    DATATYPE_DLT645_YYMMDDHHMMSS_UNIX,
+
+    DATATYPE_DLT645_BIN_XXXXXXXX,
+    DATATYPE_DLT645_BIN_XX,
+    DATATYPE_DLT645_BIN_XXX,
+    DATATYPE_DLT645_BIN_XXXX,
+
+    DATATYPE_DLT645_XXXXXXXXXX,  // 以上兼容XG6.  此类型为后补
+    DATATYPE_DATA_MAX,
+
+};
+
+
+int32_t DLT645V07_DatatoValue(uint8_t *pBCDBuf, uint16_t DataType, double *pFVal);
+
+
+#endif
+

@@ -1,0 +1,31 @@
+{
+    "files.associations": {
+        "optional": "c",
+        "istream": "c",
+        "ostream": "c",
+        "system_error": "c",
+        "array": "c",
+        "functional": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c",
+        "rn7302file.h": "c",
+        "ctype.h": "c",
+        "rn7302.h": "c",
+        "stdint.h": "c",
+        "hmi_alarm.h": "c",
+        "stdbool.h": "c",
+        "db_msgevent_api.h": "c",
+        "ui_font.h": "c",
+        "db_struct.h": "c",
+        "hmi_keyboard.h": "c",
+        "hmi_interface.h": "c",
+        "serial.h": "c",
+        "ioctl.h": "c",
+        "mb_com_baseclass.h": "c",
+        "dev_log.h": "c",
+        "mb_protocol.h": "c",
+        "mb_cfg.h": "c",
+        "mb_dlt645_07_com.h": "c"
+    }
+}

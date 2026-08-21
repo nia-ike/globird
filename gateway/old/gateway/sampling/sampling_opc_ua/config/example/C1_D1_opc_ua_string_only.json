@@ -1,0 +1,81 @@
+{
+    "desc": {
+        "version": "v1.0-20250709",
+        "protocol_group": "Standard-protocol",
+        "protocol": "opc_ua",
+        "manufacturer": "Demo",
+        "model": "OpcUaStringOnly"
+    },
+    "devName": "OpcUaStringOnly",
+    "info": {
+        "help": "仅 String NodeId 的 OPC UA 设备点表示例。所有测点 n=-1，标识写在 s 字段。"
+    },
+    "attr": {
+        "checked": 1,
+        "sn": "OPCUA-STR-001",
+        "model": "OpcUaStringOnly",
+        "protocol": "opc_ua",
+        "name": "OPC UA String Demo",
+        "function": "demo",
+        "node": {
+            "node_num": 3,
+            "node_attr": [
+                {
+                    "id": 0,
+                    "name": "CommStatus",
+                    "datattr": 1,
+                    "catagory": 170,
+                    "kfactor": 1,
+                    "unit": "",
+                    "ns": 0,
+                    "n": 2258,
+                    "s": ""
+                },
+                {
+                    "id": 1,
+                    "name": "Temperature",
+                    "datattr": 0,
+                    "catagory": 50,
+                    "kfactor": 0.1,
+                    "unit": "℃",
+                    "ns": 2,
+                    "n": -1,
+                    "s": "Objects/Device1/Temperature"
+                },
+                {
+                    "id": 2,
+                    "name": "Running",
+                    "datattr": 1,
+                    "catagory": 123,
+                    "kfactor": 1,
+                    "unit": "",
+                    "ns": 2,
+                    "n": -1,
+                    "s": "Objects/Device1/Status/Running"
+                }
+            ]
+        },
+        "control": {
+            "control_num": 1,
+            "control_attr": [
+                {
+                    "id": 0,
+                    "name": "StartCmd",
+                    "datattr": 3,
+                    "catagory": 0,
+                    "kfactor": 1,
+                    "unit": "",
+                    "ns": 2,
+                    "n": -1,
+                    "s": "Objects/Device1/Commands/Start"
+                }
+            ]
+        },
+        "extend_param": {
+            "poll_interval_ms": 1000,
+            "username": "user1",
+            "password": "password",
+            "debug_enabled": true
+        }
+    }
+}

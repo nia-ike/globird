@@ -1,0 +1,14 @@
+{
+    "version":"V1.0.0",
+    "info":{
+        "help":"meter's user setting. customer can change them!"
+    },
+    "setting":{
+        "relay":[
+            {"name":"relay[0].mode",         "Val":   1,     "ValDef":     0,    "Max":        1,    "Min": 0},
+            {"name":"relay[0].reset_time",   "Val":   0,     "ValDef":     0,    "Max":      120,    "Min": 0},
+            {"name":"relay[1].mode",         "Val":   1,     "ValDef":     0,    "Max":        1,    "Min": 0},
+            {"name":"relay[1].reset_time",   "Val":   0,     "ValDef":     0,    "Max":      120,    "Min": 0}
+        ]
+    }
+}

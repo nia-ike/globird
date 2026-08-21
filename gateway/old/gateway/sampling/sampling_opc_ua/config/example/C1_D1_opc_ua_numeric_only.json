@@ -1,0 +1,81 @@
+{
+    "desc": {
+        "version": "v1.0-20250709",
+        "protocol_group": "Standard-protocol",
+        "protocol": "opc_ua",
+        "manufacturer": "Demo",
+        "model": "OpcUaNumericOnly"
+    },
+    "devName": "OpcUaNumericOnly",
+    "info": {
+        "help": "仅 Numeric NodeId 的最简 OPC UA 设备点表示例"
+    },
+    "attr": {
+        "checked": 1,
+        "sn": "OPCUA-NUM-001",
+        "model": "OpcUaNumericOnly",
+        "protocol": "opc_ua",
+        "name": "OPC UA Numeric Demo",
+        "function": "demo",
+        "node": {
+            "node_num": 3,
+            "node_attr": [
+                {
+                    "id": 0,
+                    "name": "CommStatus",
+                    "datattr": 1,
+                    "catagory": 170,
+                    "kfactor": 1,
+                    "unit": "",
+                    "ns": 0,
+                    "n": 2258,
+                    "s": ""
+                },
+                {
+                    "id": 1,
+                    "name": "AI_001",
+                    "datattr": 0,
+                    "catagory": 0,
+                    "kfactor": 1,
+                    "unit": "",
+                    "ns": 1,
+                    "n": 1001,
+                    "s": ""
+                },
+                {
+                    "id": 2,
+                    "name": "DI_001",
+                    "datattr": 1,
+                    "catagory": 0,
+                    "kfactor": 1,
+                    "unit": "",
+                    "ns": 1,
+                    "n": 1002,
+                    "s": ""
+                }
+            ]
+        },
+        "control": {
+            "control_num": 1,
+            "control_attr": [
+                {
+                    "id": 0,
+                    "name": "DO_001",
+                    "datattr": 3,
+                    "catagory": 0,
+                    "kfactor": 1,
+                    "unit": "",
+                    "ns": 1,
+                    "n": 2001,
+                    "s": ""
+                }
+            ]
+        },
+        "extend_param": {
+            "poll_interval_ms": 2000,
+            "username": "",
+            "password": "",
+            "debug_enabled": false
+        }
+    }
+}

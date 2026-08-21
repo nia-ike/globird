@@ -1,0 +1,9 @@
+
+--此行及以下内容将会被忽略--
+
+M    modbusTCP/Makefile
+M    modbusTCP/libmodbus/config/modbus-cfg.c
+M    modbusTCP/libmodbus/config/modbus-cfg.h
+M    modbusTCP/libmodbus/encode/modbus-process.c
+M    modbusTCP/libmodbus/encode/modbus-process.h
+M    modbusTCP/libmodbus/modbus-port.c
