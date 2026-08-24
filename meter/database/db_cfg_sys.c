@@ -120,9 +120,9 @@ static const struct db_base_mapdef db_sys_adjust_map[] =
     { DB_MAP_TABLE_ADJUST(T1Adj    ), sizeof(uint16_t)},
     { DB_MAP_TABLE_ADJUST(T2Adj    ), sizeof(uint16_t)},
     { DB_MAP_TABLE_ADJUST(T3Adj    ), sizeof(uint16_t)},
-    { DB_MAP_TABLE_ADJUST(Offset_Ia), sizeof(uint16_t)},
-    { DB_MAP_TABLE_ADJUST(Offset_Ib), sizeof(uint16_t)},
-    { DB_MAP_TABLE_ADJUST(Offset_Ic), sizeof(uint16_t)},
+    { DB_MAP_TABLE_ADJUST(Offset_Ia ), sizeof(uint16_t)},
+    { DB_MAP_TABLE_ADJUST(Offset_Ib ), sizeof(uint16_t)},
+    { DB_MAP_TABLE_ADJUST(Offset_Ic ), sizeof(uint16_t)},
 };
 
 
