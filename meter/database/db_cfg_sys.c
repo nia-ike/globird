@@ -114,15 +114,15 @@ static const struct db_base_mapdef db_sys_adjust_map[] =
     { DB_MAP_TABLE_ADJUST(Qa_PhsL  ), sizeof(uint16_t)},
     { DB_MAP_TABLE_ADJUST(Qb_PhsL  ), sizeof(uint16_t)},
     { DB_MAP_TABLE_ADJUST(Qc_PhsL  ), sizeof(uint16_t)},
-    { DB_MAP_TABLE_ADJUST(ChkSum   ), sizeof(uint16_t)},
+    { DB_MAP_TABLE_ADJUST(ChkSum   ), sizeof(uint32_t)},
     { DB_MAP_TABLE_ADJUST(I0Adj    ), sizeof(uint16_t)},
     { DB_MAP_TABLE_ADJUST(T0Adj    ), sizeof(uint16_t)},
     { DB_MAP_TABLE_ADJUST(T1Adj    ), sizeof(uint16_t)},
     { DB_MAP_TABLE_ADJUST(T2Adj    ), sizeof(uint16_t)},
     { DB_MAP_TABLE_ADJUST(T3Adj    ), sizeof(uint16_t)},
-    { DB_MAP_TABLE_ADJUST(Offset_Ia ), sizeof(uint16_t)},
-    { DB_MAP_TABLE_ADJUST(Offset_Ib ), sizeof(uint16_t)},
-    { DB_MAP_TABLE_ADJUST(Offset_Ic ), sizeof(uint16_t)},
+    { DB_MAP_TABLE_ADJUST(Offset_Ia), sizeof(uint16_t)},
+    { DB_MAP_TABLE_ADJUST(Offset_Ib), sizeof(uint16_t)},
+    { DB_MAP_TABLE_ADJUST(Offset_Ic), sizeof(uint16_t)},
 };
 
 
@@ -550,6 +550,59 @@ static int db_cfg_json_item_base_read_default(struct db_cfg_CellProperties_u16 *
 /** Return:            None.                                           **/    
 /** Notice:            None.                                           **/    
 /*************************************************************************/
+/*************************************************************************/
+/** Function Name: db_cfg_json_item_base_read_u64                      **/    
+/** Purpose: 读取u64类型参数（如EnergyMax），cJSON数值经double中转      **/    
+/*************************************************************************/
+static int db_cfg_json_item_base_read_u64(struct db_cfg_CellProperties_u64 *pProp, cJSON *pObject)
+{
+    cJSON *pItem;
+
+    /* Value */
+    pItem = cJSON_GetObjectItem(pObject, "Val"); 
+    if(pItem == NULL)
+        return -1;
+    pProp->value = (uint64_t)pItem->valuedouble;
+
+    /* ValDef */
+    pItem = cJSON_GetObjectItem(pObject, "ValDef"); 
+    if(pItem == NULL)
+        return -1;
+    pProp->scope.ValDef = (uint64_t)pItem->valuedouble;
+
+    /* Max */
+    pItem = cJSON_GetObjectItem(pObject, "Max"); 
+    if(pItem == NULL)
+        return -1;
+    pProp->scope.max = (uint64_t)pItem->valuedouble;
+
+    /* Min */
+    pItem = cJSON_GetObjectItem(pObject, "Min"); 
+    if(pItem == NULL)
+        return -1;
+    pProp->scope.min = (uint64_t)pItem->valuedouble;
+
+    return 0;
+}
+
+/*************************************************************************/
+/** Function Name: db_cfg_json_item_base_write_u64                     **/    
+/** Purpose: 回写u64类型参数（如EnergyMax）                             **/    
+/*************************************************************************/
+static int db_cfg_json_item_base_write_u64(struct db_cfg_CellProperties_u64 *pProp, cJSON *pObject)
+{
+    /* Value */
+    cJSON_ReplaceItemInObject(pObject, "Val", cJSON_CreateNumber((double)pProp->value));
+    /* ValDef */
+    cJSON_ReplaceItemInObject(pObject, "ValDef", cJSON_CreateNumber((double)pProp->scope.ValDef));
+    /* Max */
+    cJSON_ReplaceItemInObject(pObject, "Max", cJSON_CreateNumber((double)pProp->scope.max));
+    /* Min */
+    cJSON_ReplaceItemInObject(pObject, "Min", cJSON_CreateNumber((double)pProp->scope.min));
+
+    return 0;
+}
+
 static int db_cfg_json_group_base_read(void *pCfg, const struct db_base_mapdef *pMap, int MapSize, cJSON *pArrayItem)
 {
     int         i, j;
@@ -574,7 +627,15 @@ static int db_cfg_json_group_base_read(void *pCfg, const struct db_base_mapdef *
 //            printf("%s %s\n",pMap[j].pName ,pItem->valuestring);
             if(!strcmp(pMap[j].pName, pItem->valuestring))
             {
-                if(pMap[j].size == sizeof(uint32_t))
+                if(pMap[j].size == sizeof(uint64_t))
+                {
+                    struct db_cfg_CellProperties_u64 *pProp_u64;
+                    pProp_u64 = (struct db_cfg_CellProperties_u64 *)(((char*)pCfg) + pMap[j].offset);
+                    db_cfg_json_item_base_read_u64(pProp_u64, pObject);
+
+                    printf("name:%s, value:%llu\n", pMap[j].pName, (unsigned long long)pProp_u64->value);
+                }
+                else if(pMap[j].size == sizeof(uint32_t))
                 {
                     pProp_u32 = (struct db_cfg_CellProperties_u32 *)(((char*)pCfg) + pMap[j].offset);
                     db_cfg_json_item_base_read_u32(pProp_u32, pObject);
@@ -732,7 +793,13 @@ static int db_cfg_json_group_base_write(void *pCfg, const struct db_base_mapdef 
         {
             if(!strcmp(pMap[j].pName, pItem->valuestring))
             {
-                if(pMap[j].size == sizeof(uint32_t))
+                if(pMap[j].size == sizeof(uint64_t))
+                {
+                    struct db_cfg_CellProperties_u64 *pProp_u64;
+                    pProp_u64 = (struct db_cfg_CellProperties_u64 *)(((char*)pCfg) + pMap[j].offset);
+                    db_cfg_json_item_base_write_u64(pProp_u64, pObject);
+                }
+                else if(pMap[j].size == sizeof(uint32_t))
                 {
                     pProp_u32 = (struct db_cfg_CellProperties_u32 *)(((char*)pCfg) + pMap[j].offset);
                     db_cfg_json_item_base_write_u32(pProp_u32, pObject);
@@ -1073,6 +1140,42 @@ int __db_cfg_sys_update(struct db_database_measure_base_type *pDB, const char *f
     ret = db_cfg_json_group_base_write(pSysCfg, &db_sys_adjust_value_map[0], sizeof(db_sys_adjust_value_map)/sizeof(struct db_base_mapdef), pjsGroup);
     if(ret < 0)
         goto __err_json_format;
+
+    /*
+        新增的4组参数回写（AD校准参数/AD校准值/相位补偿/漏电电流校准）
+        与load保持一致的兼容策略：旧模板中没有该组时跳过，不报错
+    */
+    pjsGroup=cJSON_GetObjectItem(pjsClass, "adjustAd");
+    if(pjsGroup)
+    {
+        ret = db_cfg_json_group_base_write(pSysCfg, &db_sys_adjust_ad_para_map[0], sizeof(db_sys_adjust_ad_para_map)/sizeof(struct db_base_mapdef), pjsGroup);
+        if(ret < 0)
+            goto __err_json_format;
+    }
+
+    pjsGroup=cJSON_GetObjectItem(pjsClass, "adjustAdvalue");
+    if(pjsGroup)
+    {
+        ret = db_cfg_json_group_base_write(pSysCfg, &db_sys_adjust_ad_value_map[0], sizeof(db_sys_adjust_ad_value_map)/sizeof(struct db_base_mapdef), pjsGroup);
+        if(ret < 0)
+            goto __err_json_format;
+    }
+
+    pjsGroup=cJSON_GetObjectItem(pjsClass, "prthvalue");
+    if(pjsGroup)
+    {
+        ret = db_cfg_json_group_base_write(pSysCfg, &db_sys_adjust_prth_map[0], sizeof(db_sys_adjust_prth_map)/sizeof(struct db_base_mapdef), pjsGroup);
+        if(ret < 0)
+            goto __err_json_format;
+    }
+
+    pjsGroup=cJSON_GetObjectItem(pjsClass, "adjustI0value");
+    if(pjsGroup)
+    {
+        ret = db_cfg_json_group_base_write(pSysCfg, &db_sys_adjust_I0_map[0], sizeof(db_sys_adjust_I0_map)/sizeof(struct db_base_mapdef), pjsGroup);
+        if(ret < 0)
+            goto __err_json_format;
+    }
 
     /*  */
     pPri = cJSON_Print(pJson);

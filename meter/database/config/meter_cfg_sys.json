@@ -5,7 +5,7 @@
     },
     "setting":{
         "adjust":[
-            {"name":"HfConst1", "Val": 2274,	"ValDef":  2274, "Max":65535, "Min": 1},
+            {"name":"HfConst1", "Val": 2274,    "ValDef":  2274, "Max":65535, "Min": 1},
             {"name":"HfConst2", "Val": 2274,    "ValDef":  2274, "Max":65535, "Min": 1},
             {"name":"IStart_PS","Val":    0,    "ValDef":     0, "Max":65535, "Min": 0},
             {"name":"IStart_Q", "Val":    0,    "ValDef":     0, "Max":65535, "Min": 0},
@@ -26,7 +26,6 @@
             {"name":"Phs_Ic",   "Val":    0,    "ValDef":     0, "Max":4294967295, "Min": 0},
             {"name":"Phs_In",   "Val":    0,    "ValDef":     0, "Max":4294967295, "Min": 0},
 
-
             {"name":"Pa_PhsL",  "Val":    0,    "ValDef":     0, "Max":65535, "Min": 0},
             {"name":"Pb_PhsL",  "Val":    0,    "ValDef":     0, "Max":65535, "Min": 0},
             {"name":"Pc_PhsL",  "Val":    0,    "ValDef":     0, "Max":65535, "Min": 0},
@@ -37,8 +36,8 @@
             {"name":"Offset_Ib","Val":    0,    "ValDef":     0, "Max":65535, "Min": 0},
             {"name":"Offset_Ic","Val":    0,    "ValDef":     0, "Max":65535, "Min": 0},
 
-            {"name":"ChkSum",   "Val":    0,    "ValDef":     0, "Max":65535, "Min": 0},
-           
+            {"name":"ChkSum",   "Val":    0,    "ValDef":     0, "Max":4294967295, "Min": 0},
+
             {"name":"I0Adj",    "Val":  400,    "ValDef":   400, "Max":65535, "Min": 1},
             {"name":"T0Adj",    "Val":26723,    "ValDef": 26723, "Max":65535, "Min": 1},
             {"name":"T1Adj",    "Val":26723,    "ValDef": 26723, "Max":65535, "Min": 1},
@@ -46,7 +45,7 @@
             {"name":"T3Adj",    "Val":26723,    "ValDef": 26723, "Max":65535, "Min": 1}
         ],
         "deadzone":[
-            {"name":"Va",  "Val":500,	 "ValDef":	 500,	 "Max":65535, "Min": 0},
+            {"name":"Va",  "Val":500,    "ValDef":   500,    "Max":65535, "Min": 0},
             {"name":"Vb",  "Val":500,    "ValDef":   500,    "Max":65535, "Min": 0},
             {"name":"Vc",  "Val":500,    "ValDef":   500,    "Max":65535, "Min": 0},
             {"name":"Ia",  "Val": 15,    "ValDef":    15,    "Max":65535, "Min": 0},
@@ -67,10 +66,10 @@
             {"name":"Vca", "Val":800,    "ValDef":   800,    "Max":65535, "Min": 0}
         ],
         "interface":[
-            {"name":"RatedVoltage",  	"Val":220,	    "ValDef":	220,	"Max":65535,     "Min": 0},
-            {"name":"RatedCurrent",  	"Val":  5,      "ValDef":     5,    "Max":65535,     "Min": 0},
-            {"name":"RatedFrequency",	"Val": 50,      "ValDef":    50,    "Max":75,        "Min": 30},
-            {"name":"energy_max",         "Val":420000000000,"ValDef":420000000000, "Max":999999999999999999, "Min": 1}
+            {"name":"RatedVoltage",    "Val":220,          "ValDef":220,          "Max":65535,               "Min": 0},
+            {"name":"RatedCurrent",    "Val":  5,          "ValDef":  5,          "Max":65535,               "Min": 0},
+            {"name":"RatedFrequency",  "Val": 50,          "ValDef": 50,          "Max":75,                  "Min": 30},
+            {"name":"EnergyMax",       "Val":420000000000, "ValDef":420000000000, "Max":999999999999999999,  "Min": 1}
         ],
         "adjustvalue":[
             {"name":"Adjust_Va",      "Val":22000,      "ValDef":22000,   "Max":65535,     "Min":  1},
@@ -82,7 +81,47 @@
             {"name":"Adjust_Pfa",     "Val":  500,      "ValDef":  500,   "Max":65535,     "Min":  1},
             {"name":"Adjust_Pfb",     "Val":  500,      "ValDef":  500,   "Max":65535,     "Min":  1},
             {"name":"Adjust_Pfc",     "Val":  500,      "ValDef":  500,   "Max":65535,     "Min":  1}
+        ],
+        "adjustAd":[
+            {"name":"Adjust_Gv",      "Val":    1,      "ValDef":    1,   "Max":65535,     "Min":  1},
+            {"name":"Adjust_Gi",      "Val":    1,      "ValDef":    1,   "Max":65535,     "Min":  1},
+            {"name":"Krms_V",         "Val":  100,      "ValDef":  100,   "Max":65535,     "Min":  1},
+            {"name":"Krms_I",         "Val": 1000,      "ValDef": 1000,   "Max":65535,     "Min":  1},
+            {"name":"Krms_P",         "Val":   10,      "ValDef":   10,   "Max":65535,     "Min":  1},
+            {"name":"Krms_Pf",        "Val": 1000,      "ValDef": 1000,   "Max":65535,     "Min":  1},
+            {"name":"Krms_Hz",        "Val":10000,      "ValDef":10000,   "Max":65535,     "Min":  1},
+            {"name":"Krms_E",         "Val": 1000,      "ValDef": 1000,   "Max":65535,     "Min":  1}
+        ],
+        "adjustAdvalue":[
+            {"name":"Adjust_V",       "Val":  220,      "ValDef":  220,   "Max":65535,        "Min":  1},
+            {"name":"Adjust_I",       "Val":    5,      "ValDef":    5,   "Max":65535,        "Min":  1},
+            {"name":"Adjust_P",       "Val": 1100,      "ValDef": 1100,   "Max":65535,        "Min":  1},
+            {"name":"Adjust_A",       "Val":   60,      "ValDef":   60,   "Max":65535,        "Min":  0},
+            {"name":"Adjust_Va",      "Val":22000000,   "ValDef":22000000, "Max":4294967295,  "Min":  1},
+            {"name":"Adjust_Vb",      "Val":22000000,   "ValDef":22000000, "Max":4294967295,  "Min":  1},
+            {"name":"Adjust_Vc",      "Val":22000000,   "ValDef":22000000, "Max":4294967295,  "Min":  1},
+            {"name":"Adjust_Ia",      "Val":2500000,    "ValDef":2500000,  "Max":4294967295,  "Min":  1},
+            {"name":"Adjust_Ib",      "Val":2500000,    "ValDef":2500000,  "Max":4294967295,  "Min":  1},
+            {"name":"Adjust_Ic",      "Val":2500000,    "ValDef":2500000,  "Max":4294967295,  "Min":  1},
+            {"name":"Adjust_Pa",      "Val":6556511,    "ValDef":6556511,  "Max":4294967295,  "Min":  1},
+            {"name":"Adjust_Pb",      "Val":6556511,    "ValDef":6556511,  "Max":4294967295,  "Min":  1},
+            {"name":"Adjust_Pc",      "Val":6556511,    "ValDef":6556511,  "Max":4294967295,  "Min":  1}
+        ],
+        "prthvalue":[
+            {"name":"Prth1L",         "Val":   25,      "ValDef":   25,   "Max":65535,     "Min":  0},
+            {"name":"Prth1H",         "Val":   40,      "ValDef":   40,   "Max":65535,     "Min":  0},
+            {"name":"Prth2L",         "Val":   80,      "ValDef":   80,   "Max":65535,     "Min":  0},
+            {"name":"Prth2H",         "Val":  100,      "ValDef":  100,   "Max":65535,     "Min":  0},
+            {"name":"PhsxR1",         "Val":   20,      "ValDef":   20,   "Max":65535,     "Min":  0},
+            {"name":"PhsxR2",         "Val":    0,      "ValDef":    0,   "Max":65535,     "Min":  0},
+            {"name":"PhsxR3",         "Val":65506,      "ValDef":65506,   "Max":65535,     "Min":  0}
+        ],
+        "adjustI0value":[
+            {"name":"RatedI0",        "Val":    5,      "ValDef":    5,   "Max":65535,        "Min":  1},
+            {"name":"Adjust_Gi0",     "Val":    2,      "ValDef":    2,   "Max":65535,        "Min":  1},
+            {"name":"TypeI0",         "Val":    0,      "ValDef":    0,   "Max":1,            "Min":  0},
+            {"name":"Adjust_I0",      "Val":    5,      "ValDef":    5,   "Max":65535,        "Min":  1},
+            {"name":"Adjust_I0_value","Val":12000000,   "ValDef":12000000, "Max":4294967295,  "Min":  1}
         ]
     }
-
 }
