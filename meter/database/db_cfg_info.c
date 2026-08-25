@@ -46,14 +46,14 @@
 //通讯协议版本号
 #define PROTOCOL_VER 1
 
-#define DEVICE_NAME "TASO700Pro"
+#define DEVICE_NAME "GBE-CH100-CW"
 
 #define DEVICE_ID   700
 
 #define VERSION_FILE        "/ego/system/version"
-#define SN_FILE             "/userdata/config/system/sn"
-#define MODEL_FILE          "/userdata/config/system/model"
-#define MAC_FILE            "/userdata/config/system/mac"
+#define SN_FILE             "/userdata/system/sn"
+#define MODEL_FILE          "/userdata/system/model"
+#define MAC_FILE            "/userdata/system/mac"
 #define SYSTEM_MAC_FILE     "/sys/class/net/eth0/address"
 
 /* EGO700 and EGO700L model */
@@ -74,7 +74,7 @@ static int rn7302_ego_model(void)
     int ret = MODEL_EGO700;
     char model[32], n;
 
-    int fd = open("/userdata/config/system/model", O_RDONLY);
+    int fd = open("/userdata/system/model", O_RDONLY);
 
     if(fd < 0)
         return ret;
@@ -289,7 +289,7 @@ __err_close:
 
 /*********************************************************************************************************
 ** Function name:       get_device_name_from_model
-** Descriptions:        从MODEL_FILE文件中获取第一个'-'之前的字符串，赋值给device
+** Descriptions:        从MODEL_FILE文件中读取完整型号字符串，赋值给device
 ** input parameters:    filename - 模型文件路径
                         device - 输出缓冲区
                         device_size - 缓冲区大小
@@ -300,7 +300,6 @@ int get_device_name_from_model(const char *filename, char *device, size_t device
 {
     FILE *fp = NULL;
     char model[64] = {0};
-    char *dash_pos = NULL;
     int n = 0;
     size_t copy_len = 0;
 
@@ -322,17 +321,16 @@ int get_device_name_from_model(const char *filename, char *device, size_t device
     }
     model[n] = '\0';
 
-    /* 查找第一个 '-' 的位置 */
-    dash_pos = strchr(model, '-');
-    if(dash_pos != NULL)
+    /* 去掉末尾换行和空白 */
+    while(n > 0 && isspace((unsigned char)model[n - 1]))
     {
-        /* 计算 '-' 之前的长度 */
-        copy_len = dash_pos - model;
+        model[--n] = '\0';
     }
-    else
+
+    copy_len = strlen(model);
+    if(copy_len == 0)
     {
-        /* 如果没有找到 '-'，使用整个字符串 */
-        copy_len = strlen(model);
+        goto __err_close;
     }
 
     /* 确保不超过缓冲区大小 */
@@ -341,7 +339,7 @@ int get_device_name_from_model(const char *filename, char *device, size_t device
         copy_len = device_size - 1;
     }
 
-    /* 复制字符串 */
+    /* 复制完整型号 */
     strncpy(device, model, copy_len);
     device[copy_len] = '\0';
 
@@ -386,7 +384,7 @@ void db_deviceinfo_init(void *args)
     pstDeviceInfo->HardVersion = HARD_VER;             //硬件版本号
     pstDeviceInfo->reserve = 0;
     get_char(SN_FILE, (char*)&pstDeviceInfo->SNInfo[0], sizeof(pstDeviceInfo->SNInfo));
-    /* 从MODEL_FILE文件中获取第一个'-'之前的字符串作为设备名称 */
+    /* 从MODEL_FILE文件中获取完整型号作为设备名称 */
     if(get_device_name_from_model(MODEL_FILE, (char*)&pstDeviceInfo->device[0], sizeof(pstDeviceInfo->device)) != 0)
     {
         /* 如果获取失败，使用默认值 */

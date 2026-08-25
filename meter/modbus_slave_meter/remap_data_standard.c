@@ -294,9 +294,9 @@ static const ST_REG_4XXXX_ATTR   reg_4x_section[] = {
 
     { NULL,                                                      59067,      9,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_set_mac_handle     }, // 写mac 
     { NULL,                                                      59076,      13,                                              MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_set_model_handle     }, // 写型号
-    { NULL,                                                      59089,      8,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_set_sn_handle     }, // 写sn  
-    { NULL,                                                      59097,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_led_handle}, // led 测试
-    { NULL,                                                      59098,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_lcd_handle}, // lcd测试
+    { NULL,                                                      59089,      10,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_set_sn_handle     }, // 写sn  
+    // { NULL,                                                      59097,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_led_handle}, // led 测试
+    // { NULL,                                                      59098,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_lcd_handle}, // lcd测试
     { NULL,                                                      59099,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_envset_handle     }, // 测试环境
     { NULL,                                                      59101,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_clearE2_handle}, // 清电能
     { NULL,                                                      59102,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_historyE2_handle}, // 清电能
@@ -475,7 +475,7 @@ static int mb_cmd_test_set_mac_handle(struct mb_comm_ctx_t *pCtx, struct remap_M
         snprintf(mac_addr, sizeof(mac_addr),"%s",p_value);  
 
         /*mac write check */
-        if(0 == mb_mac_write_then_read("/userdata/config/system/mac",mac_addr,sizeof(mac_addr))) 
+        if(0 == mb_mac_write_then_read("/userdata/system/mac",mac_addr,sizeof(mac_addr))) 
         {
             /*update memory mac*/
             snprintf((char*)&pdb->db_measurebase[0].db_cfg.user.network.mac_addr,sizeof(pdb->db_measurebase[0].db_cfg.user.network.mac_addr), "%s", mac_addr);
@@ -501,7 +501,7 @@ static int mb_cmd_test_set_model_handle(struct mb_comm_ctx_t *pCtx, struct remap
 {
     int      fd;
 
-    fd = open("/userdata/config/system/model", O_WRONLY | O_CREAT | O_TRUNC);
+    fd = open("/userdata/system/model", O_WRONLY | O_CREAT | O_TRUNC);
     if(fd < 0)
     {
         return -1;
@@ -527,11 +527,11 @@ static int mb_cmd_test_set_sn_handle(struct mb_comm_ctx_t *pCtx, struct remap_Mo
 {
     int      fd;
 
-    /* for example: "TSM2205010001" 共14个字符+1个结束符, 所以寄存器需要8个 */    
-    if((p_value[0] != 'T') || (p_value[1] != 'S'))
+    /* for example: "GBECH102608230001" 共14个字符+1个结束符, 所以寄存器需要8个 */    
+    if((p_value[0] != 'G') || (p_value[1] != 'B'))
         return -1;
 
-    fd = open("/userdata/config/system/sn", O_WRONLY | O_CREAT | O_TRUNC);
+    fd = open("/userdata/system/sn", O_WRONLY | O_CREAT | O_TRUNC);
     if(fd < 0)
     {
         return -1;
@@ -540,7 +540,7 @@ static int mb_cmd_test_set_sn_handle(struct mb_comm_ctx_t *pCtx, struct remap_Mo
     close(fd);
 
     /* sn */
-    strncpy((char*)&pCtx->pvmem->db_cfg_info.device.SNInfo[0], p_value, 15);
+    strncpy((char*)&pCtx->pvmem->db_cfg_info.device.SNInfo[0], p_value, 18);
     db_msg_event_cmd(DB_EVENT_TYPE_SAVE_DEVICEINFO);
     
     return 0;

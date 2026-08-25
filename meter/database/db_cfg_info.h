@@ -46,7 +46,7 @@ struct db_info_version_type
 */
 struct db_info_status_type
 {
-    int16_t   SimIsInsert;          //是否插卡
+    int16_t   SimIsInsert;          // AT+CPIN? 返回SIM ready表示插卡，但失败不代表无卡，可能模组死机
     int16_t   SimIsReg;             //是否注册
     int16_t   SimCsq;               //SIM CSQ 0-31 -99
     // int16_t    SimRsrq;             //CESQ Rsrq
@@ -58,7 +58,7 @@ struct db_info_status_type
     uint16_t   poweroff_status;      //0:掉电恢复 0xF00F:产生掉电
     struct timeval poweroff_Time;
     uint16_t  wifi_ready;
-    uint16_t  reserve[1];           //占位，尽量不影响后面的结构体
+    int16_t   SimDetect;            // sim硬件管脚检测，0=未插卡，1=已插卡
 };
 
 struct db_info_product_test_type

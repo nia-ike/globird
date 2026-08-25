@@ -29,7 +29,7 @@ static uint32_t     inv_energy_record = MSG_ENERGY_SAVE_TIMES;
 static uint8_t      max_msg_channels = 2;  // 默认支持2个消息通道
 static time_t       last_energy_save_hour = 0;  // 记录上次保存电能数据的小时数
 
-#define FILE_NAME_FIRSTBOOT "/userdata/config/system/firstboot"
+#define FILE_NAME_FIRSTBOOT "/userdata/system/firstboot"
 
 
 // shows how to use this program
