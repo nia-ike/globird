@@ -15,6 +15,7 @@
 #include "db_channel_helper.h"  /* 多通道辅助宏 */
 
 #include "db_measure_energy.h"
+#include "db_measure_info.h"
 
 #define MSG_ENERGY_SAVE_TIME0               0
 #define MSG_HISTORY_ENERGY_SAVE_TIME1       1
@@ -593,6 +594,8 @@ int main(int argc, char **argv)
             printf("Failed to load config for channel %d\n", ch);
             return -1;
         }
+
+        db_measure_info_init(&pDB->db_measurebase[ch].info);
         
         /* 加载能量数据库 */
         db_energy_init(&pDB->db_measurebase[ch], ch,

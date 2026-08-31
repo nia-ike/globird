@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "netmgr_v4_probe.h"
+
 typedef enum {
     NM4_WANT_NONE = 0,
     NM4_WANT_ETH0,
@@ -27,12 +29,13 @@ uint8_t nm4_policy_to_r(const nm4_bits_t *b);
 
 /*********************************************************************************************************
 ** Function name:       nm4_policy_pick_want
-** Descriptions:        Pick preferred WAN by priority eth>wlan>ppp; see src/policy.c.
-** input parameters:    b       - debounced bits.
+** Descriptions:        Pick WAN by eth>wlan>ppp; eth LAN-only when wlan+ppp down; see policy.c.
+** input parameters:    b           - debounced bits.
+**                      eth_probe   - latest eth0 probe for LAN fallback (NULL to skip).
 ** output parameters:   NONE
 ** Returned value:      NM4_WANT_* enum.
 *********************************************************************************************************/
-nm4_want_t nm4_policy_pick_want(const nm4_bits_t *b);
+nm4_want_t nm4_policy_pick_want(const nm4_bits_t *b, const nm4_probe_result_t *eth_probe);
 
 /*********************************************************************************************************
 ** Function name:       nm4_policy_want_name
@@ -42,5 +45,6 @@ nm4_want_t nm4_policy_pick_want(const nm4_bits_t *b);
 ** Returned value:      Pointer to static string.
 *********************************************************************************************************/
 const char *nm4_policy_want_name(nm4_want_t w);
+void nm4_policy_load_prior(const char *path);
 
 #endif

@@ -4,6 +4,7 @@
 #include "netmgr_v4_route.h"
 #include "netmgr_v4_gateway.h"
 #include "netmgr_v4_dns.h"
+#include "netmgr_v4_config.h"
 
 /*********************************************************************************************************
 ** Function name:       run_cmd
@@ -15,6 +16,30 @@
 static int run_cmd(const char *cmd)
 {
     return system(cmd);
+}
+
+/*********************************************************************************************************
+** Function name:       del_managed_defaults
+** Descriptions:        Remove netmgrd-owned default routes (metric 10) from main table.
+** input parameters:    NONE
+** output parameters:   NONE
+** Returned value:      NONE
+*********************************************************************************************************/
+static void del_managed_defaults(void)
+{
+    static const char *devs[] = { "eth0", "wlan0", "ppp0" };
+    char cmd[256];
+    int i, n;
+
+    for (i = 0; i < 3; i++) {
+        (void)snprintf(cmd, sizeof(cmd),
+                       "ip route del default dev %s metric 10 2>/dev/null", devs[i]);
+        (void)run_cmd(cmd);
+    }
+    for (n = 0; n < 8; n++) {
+        if (run_cmd("ip route del default metric 10 2>/dev/null") != 0)
+            break;
+    }
 }
 
 /*********************************************************************************************************
@@ -61,16 +86,13 @@ int nm4_route_apply(nm4_want_t want)
     int ret = -1;
 
     if (want == NM4_WANT_NONE) {
-        int i;
-        for (i = 0; i < 8; i++) {
-            if (run_cmd("ip route del default 2>/dev/null") != 0)
-                break;
-        }
+        del_managed_defaults();
         ret = 0;
     } else if (want == NM4_WANT_PPP0) {
         snprintf(cmd, sizeof(cmd), "ip route replace default dev ppp0 metric 10");
         ret = run_cmd(cmd) == 0 ? 0 : -1;
     } else if (want == NM4_WANT_ETH0) {
+        (void)nm4_config_write_eth_runtime_cache(NM4_NETWORK_JSON);
         if (nm4_gw_resolve("eth0", gw, sizeof(gw)) == 0) {
             snprintf(cmd, sizeof(cmd),
                      "ip route replace default via %s dev eth0 metric 10", gw);
@@ -90,12 +112,9 @@ int nm4_route_apply(nm4_want_t want)
         ret = run_cmd(cmd) == 0 ? 0 : -1;
     }
 
-    /* Ensure fallback DNS servers are always at the top of resolv.conf
-     * This prevents DNS issues when switching between different network interfaces
-     * with different DNS servers provided by DHCP/PPP.
-     */
+    /* WAN DNS first, then 8.8.8.8 fallback — see nm4_dns_apply */
     if (ret == 0) {
-        (void)nm4_dns_ensure_fallback();
+        (void)nm4_dns_apply(want);
     }
 
     return ret;

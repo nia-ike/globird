@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include "db_measure.h"
 #include "db_cfg.h"
+#include "db_measure_info.h"
 
 
 enum 
@@ -54,6 +55,7 @@ struct db_database_measure_base_type
 {
     struct db_database_measure_type    db_measure;     //测量数据
     struct db_database_cfg_para        db_cfg;         //配置数据
+    struct db_measure_runtime_info_type  info;           //测量刷新序号等信息
 };
 
 struct db_database_info_type

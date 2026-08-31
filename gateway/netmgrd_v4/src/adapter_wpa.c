@@ -11,6 +11,72 @@
 #include "netmgr_v4_adapter.h"
 #include "adapter_internal.h"
 
+#define NM4_UDHCPC_SCRIPT "/ech/script/udhcpc.netmgrd"
+
+static char s_applied_ssid[64];
+static char s_applied_psk[64];
+static char s_applied_conf[NM4_PATH_MAX];
+
+/*********************************************************************************************************
+** Function name:       wpa_clear_applied
+** Descriptions:        Clear cached WiFi credentials used for idempotent start matching.
+** input parameters:    NONE
+** output parameters:   NONE
+** Returned value:      NONE
+*********************************************************************************************************/
+static void wpa_clear_applied(void)
+{
+    s_applied_ssid[0] = '\0';
+    s_applied_psk[0] = '\0';
+    s_applied_conf[0] = '\0';
+}
+
+/*********************************************************************************************************
+** Function name:       wpa_mark_applied
+** Descriptions:        Remember WiFi params after a successful wpa_supplicant start.
+** input parameters:    p       - WPA parameters that were applied.
+** output parameters:   NONE
+** Returned value:      NONE
+*********************************************************************************************************/
+static void wpa_mark_applied(const nm4_wpa_params_t *p)
+{
+    if (!p)
+        return;
+    if (p->wpa_conf[0]) {
+        (void)snprintf(s_applied_conf, sizeof(s_applied_conf), "%s", p->wpa_conf);
+        s_applied_ssid[0] = '\0';
+        s_applied_psk[0] = '\0';
+    } else {
+        (void)snprintf(s_applied_ssid, sizeof(s_applied_ssid), "%s", p->ssid);
+        (void)snprintf(s_applied_psk, sizeof(s_applied_psk), "%s", p->psk);
+        s_applied_conf[0] = '\0';
+    }
+}
+
+/*********************************************************************************************************
+** Function name:       wpa_params_match_applied
+** Descriptions:        Return whether running wpa_supplicant was started with same ssid/psk/conf.
+** input parameters:    p       - desired WPA parameters.
+** output parameters:   NONE
+** Returned value:      1 if matches cached applied config, else 0.
+*********************************************************************************************************/
+static int wpa_params_match_applied(const nm4_wpa_params_t *p)
+{
+    if (!p)
+        return 0;
+    if (p->wpa_conf[0]) {
+        if (!s_applied_conf[0])
+            return 0;
+        return strcmp(p->wpa_conf, s_applied_conf) == 0;
+    }
+    if (!p->ssid[0] || !p->psk[0])
+        return 0;
+    if (!s_applied_ssid[0])
+        return 0;
+    return strcmp(p->ssid, s_applied_ssid) == 0 &&
+           strcmp(p->psk, s_applied_psk) == 0;
+}
+
 /*********************************************************************************************************
 ** Function name:       nm4_fputc_escaped
 ** Descriptions:        Write string to FILE escaping backslash and double-quote for wpa_supplicant conf.
@@ -114,8 +180,15 @@ int nm4_adapter_wpa_start(const nm4_wpa_params_t *p)
     wpa_ok = nm4_pidfile_alive(wpa_pidf);
     u_ok = nm4_pidfile_alive(dhc_pidf);
 
-    if (wpa_ok && u_ok && nm4_if_is_up(p->ifname))
+    if (wpa_ok && u_ok && nm4_if_is_up(p->ifname) && wpa_params_match_applied(p))
         return 0;
+
+    if (wpa_ok && !wpa_params_match_applied(p)) {
+        nm4_adapter_wpa_stop(p->ifname);
+        wpa_clear_applied();
+        wpa_ok = 0;
+        u_ok = 0;
+    }
 
     if (!wpa_ok)
         (void)unlink(wpa_pidf);
@@ -150,11 +223,14 @@ int nm4_adapter_wpa_start(const nm4_wpa_params_t *p)
 
     if (!u_ok) {
         snprintf(cmd, sizeof(cmd),
-                 "udhcpc -i %s -b -p %s >/dev/null 2>&1 &",
-                 p->ifname, dhc_pidf);
+                 "udhcpc -i %s -b -p %s -s %s >/dev/null 2>&1 &",
+                 p->ifname, dhc_pidf, NM4_UDHCPC_SCRIPT);
         (void)nm4_run_cmd(cmd);
         did = 1;
     }
+
+    if (did || wpa_ok)
+        wpa_mark_applied(p);
 
     (void)did;
     return 0;
@@ -189,6 +265,7 @@ int nm4_adapter_wpa_stop(const char *ifname)
     snprintf(cmd, sizeof(cmd), "ifconfig %s down 2>/dev/null", ifname);
     (void)nm4_run_cmd(cmd);
 
+    wpa_clear_applied();
     return 0;
 }
 
@@ -279,4 +356,29 @@ int nm4_adapter_wpa_change_mac(const char *ifname, uint8_t mac_suffix)
 
     fprintf(stderr, "adapter_wpa: MAC changed to %s\n", new_mac);
     return 0;
+}
+
+/*********************************************************************************************************
+** Function name:       nm4_adapter_wpa_renew
+** Descriptions:        Signal running udhcpc (SIGUSR1) to renew DHCP lease.
+** input parameters:    ifname  - WiFi interface name.
+** output parameters:   NONE
+** Returned value:      0 on success, -1 if udhcpc not running or signal failed.
+*********************************************************************************************************/
+int nm4_adapter_wpa_renew(const char *ifname)
+{
+    char pidf[160];
+    char cmd[256];
+
+    if (!ifname || !ifname[0])
+        return -1;
+
+    snprintf(pidf, sizeof(pidf), "/var/run/udhcpc.%s.pid", ifname);
+    if (!nm4_pidfile_alive(pidf))
+        return -1;
+
+    snprintf(cmd, sizeof(cmd),
+             "kill -USR1 $(cat %s) 2>/dev/null",
+             pidf);
+    return nm4_run_cmd(cmd) == 0 ? 0 : -1;
 }

@@ -71,6 +71,7 @@ int nm4_adapter_ppp_start(const nm4_ppp_params_t *p)
              "echo 'nodetach' >> %s && "
              "echo 'usepeerdns' >> %s && "
              "echo 'noipdefault' >> %s && "
+             "echo 'nodefaultroute' >> %s && "
              "echo 'user \"%s\"' >> %s && "
              "echo 'password \"%s\"' >> %s && "
              "echo '0.0.0.0:0.0.0.0' >> %s && "
@@ -78,7 +79,7 @@ int nm4_adapter_ppp_start(const nm4_ppp_params_t *p)
              "echo 'lcp-echo-interval 120' >> %s && "
              "echo 'connect \"/usr/sbin/chat -s -v -f %s\"' >> %s",
              p->device,
-             peer_path, peer_path, peer_path, peer_path, peer_path, peer_path,
+             peer_path, peer_path, peer_path, peer_path, peer_path, peer_path, peer_path,
              p->user, peer_path, p->password, peer_path,
              peer_path, peer_path, peer_path,
              chat_path, peer_path);

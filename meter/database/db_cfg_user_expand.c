@@ -627,8 +627,7 @@ int db_cfg_user_expand_load(struct db_database_type *pDB, const char *file)
     int     size;
     int     ret;
     cJSON   *pJson, *pjsClass, *pjsGroup;
-    struct db_cfg_user_para *pCfg = &(pDB->db_measurebase[0].db_cfg.user);
-    struct db_database_expand_type    *pCfgDigi = &(pDB->db_expand);
+    struct db_database_expand_type *pCfg = &(pDB->db_expand);
     /* prepare the buffer for json */
     p = db_cfg_jsonfile_alloc(file, &size);
     if(p == NULL)
@@ -656,7 +655,8 @@ int db_cfg_user_expand_load(struct db_database_type *pDB, const char *file)
     pjsGroup=cJSON_GetObjectItem(pjsClass, "relay");
     if(!pjsGroup)
         goto __err_json_format;
-    ret = db_cfg_json_group_base_read(pCfg, &db_user_relay_map[0], sizeof(db_user_relay_map)/sizeof(struct db_base_mapdef), pjsGroup);
+    ret = db_cfg_json_group_base_read(pCfg, &db_user_relay_map[0],
+        sizeof(db_user_relay_map) / sizeof(struct db_base_mapdef), pjsGroup);
     if(ret < 0)
         goto __err_json_format;
 

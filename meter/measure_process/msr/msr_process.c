@@ -60,6 +60,8 @@
 #include "algorithm_loadrun.h"
 
 #include "algorithm_extremum.h"
+#include "algorithm_halfwave.h"
+#include "db_measure_info.h"
 
 #include "debug.h"
 
@@ -254,6 +256,9 @@ void *msr_thread_proc(struct measure_ctx *pctx)
             hw++;            
             rms_algorithm_halfwave(pMeasure, pMeasureHalf, hw);
 
+            if ((hw % HALFWAVE_NUM) == 0)
+                db_measure_info_halfwave_done(pMeasure);
+
             if((hw % refreshNum) == 0)
             {
                 hw = 0;
@@ -261,6 +266,7 @@ void *msr_thread_proc(struct measure_ctx *pctx)
                 {
                     rms_algorithm_Rn7302(pctx);
                     rms_algorithm_Primary_to_secondary(pMeasure,pRealtimeSecondary,pt,ct);
+                    db_measure_info_full_cycle_done(pMeasure);
                     pMeasurePrimary->DemoFlag = 1;
                 }
                 else
@@ -373,6 +379,7 @@ int32_t msr_init(struct measure_ctx *pctx)
     Rn7302Init(pMeasure);
     rms_algorithm_dmd_init(pMeasure);
     LoadrunInit(pMeasure);
+    db_measure_info_init(&pMeasure->info);
     /* 初始化定时器线程 */
     pthread_attr_t attr;
     pthread_attr_init(&attr);

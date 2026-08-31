@@ -10,10 +10,13 @@
 #include "netmgr_v4.h"
 #include "netmgr_v4_config.h"
 #include "netmgr_v4_linkkeeper.h"
+#include "netmgr_v4_manager.h"
+#include "netmgr_v4_adapter.h"
+#include "netmgr_v4_hw_sim.h"
 #include "adapter_internal.h"
 
 #define NM4_KEEPALIVE_WIFI_MS_DEFAULT 10000ULL
-#define NM4_KEEPALIVE_PPP_MS_DEFAULT  15000ULL
+#define NM4_KEEPALIVE_PPP_MS_DEFAULT  60000ULL
 #define NM4_MODEM_RECOVER_COOLDOWN_MS 300000ULL
 #define NM4_MODEM_RECOVER_WAIT_TTY_MS 45000ULL
 #define NM4_MODEM_STOP_SETTLE_MS 5000ULL
@@ -42,39 +45,8 @@ static int path_exists(const char *path)
     return path && path[0] && access(path, F_OK) == 0;
 }
 
-/*********************************************************************************************************
-** Function name:       nm4_if_has_ipv4
-** Descriptions:        Check if interface has at least one IPv4 address.
-** input parameters:    ifname  - interface name.
-** output parameters:   NONE
-** Returned value:      1 if IPv4 present, 0 if not or error.
-*********************************************************************************************************/
-static int nm4_if_has_ipv4(const char *ifname)
-{
-    int fd;
-    struct ifreq ifr;
-    struct sockaddr_in *sin;
-    int has_ip = 0;
-
-    if (!ifname || !ifname[0])
-        return 0;
-
-    fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd < 0)
-        return 0;
-
-    memset(&ifr, 0, sizeof(ifr));
-    (void)snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
-
-    if (ioctl(fd, SIOCGIFADDR, &ifr) == 0) {
-        sin = (struct sockaddr_in *)&ifr.ifr_addr;
-        if (sin->sin_family == AF_INET && sin->sin_addr.s_addr != 0)
-            has_ip = 1;
-    }
-
-    close(fd);
-    return has_ip;
-}
+static int s_lk_had_wifi_ip;
+static int s_lk_had_ppp_ip;
 
 /*********************************************************************************************************
 ** Function name:       tmp_log_ppp_recover
@@ -155,6 +127,11 @@ static int ppp_try_modem_recover(nm4_linkkeeper_t *lk, uint64_t now_ms)
     if (now_ms - lk->ppp_last_modem_recover_ms < NM4_MODEM_RECOVER_COOLDOWN_MS) {
         tmp_log_ppp_recover("cooldown", lk->ppp.device, -2, -2);
         (void)snprintf(lk->ppp_last_msg, sizeof(lk->ppp_last_msg), "tty missing,cooldown");
+        return -1;
+    }
+    if (nm4_sim_present() != 1) {
+        tmp_log_ppp_recover("no sim", lk->ppp.device, -3, -3);
+        (void)snprintf(lk->ppp_last_msg, sizeof(lk->ppp_last_msg), "no sim,skip recover");
         return -1;
     }
 
@@ -279,6 +256,24 @@ int nm4_linkkeeper_init(nm4_linkkeeper_t *lk, const char *cfgpath, char *err, un
 }
 
 /*********************************************************************************************************
+** Function name:       nm4_linkkeeper_shutdown
+** Descriptions:        Stop WiFi/PPP adapters on manager exit so restart reapplies config.
+** input parameters:    lk      - linkkeeper state with ifnames.
+** output parameters:   NONE
+** Returned value:      NONE
+*********************************************************************************************************/
+void nm4_linkkeeper_shutdown(const nm4_linkkeeper_t *lk)
+{
+    if (!lk)
+        return;
+
+    if (lk->has_wifi && lk->wpa.ifname[0])
+        (void)nm4_adapter_wpa_stop(lk->wpa.ifname);
+    if (lk->has_ppp && lk->ppp.ifname[0])
+        (void)nm4_adapter_ppp_stop(lk->ppp.ifname);
+}
+
+/*********************************************************************************************************
 ** Function name:       nm4_linkkeeper_tick
 ** Descriptions:        One keepalive tick: optional WiFi/PPP adapter start, modem recover if tty missing.
 ** input parameters:    lk      - linkkeeper state.
@@ -300,6 +295,8 @@ void nm4_linkkeeper_tick(nm4_linkkeeper_t *lk, uint64_t now_ms)
     if (lk->has_ppp && (lk->last_ppp_keep_ms == 0 ||
         now_ms - lk->last_ppp_keep_ms >= g_keepalive_ppp_ms))
         ppp_due = 1;
+    if (lk->has_ppp && !nm4_sim_ppp_effective(lk))
+        ppp_due = 0;
 
     if (lk->has_wifi) {
         if (lk->last_wifi_keep_ms == 0 || wifi_due) wifi_next_in = 0;
@@ -319,6 +316,12 @@ void nm4_linkkeeper_tick(nm4_linkkeeper_t *lk, uint64_t now_ms)
         netmgr_v4_log(
             "linkkeeper: tick now=%" PRIu64 " wifi(due=%d,next_in=%" PRIu64 "ms) ppp(due=%d,next_in=%" PRIu64 "ms)",
             now_ms, wifi_due, wifi_next_in, ppp_due, ppp_next_in);
+    }
+
+    if (lk->has_ppp && !nm4_sim_ppp_effective(lk)) {
+        lk->ppp_due = 0;
+        lk->ppp_next_in_ms = 0;
+        (void)snprintf(lk->ppp_last_msg, sizeof(lk->ppp_last_msg), "no sim,ppp idle");
     }
 
     if (wifi_due) {
@@ -344,6 +347,9 @@ void nm4_linkkeeper_tick(nm4_linkkeeper_t *lk, uint64_t now_ms)
 
         /* WiFi deadlink detection: wpa_supplicant running but no IP for too long */
         has_ip = nm4_if_has_ipv4(lk->wpa.ifname);
+        if (has_ip && !s_lk_had_wifi_ip)
+            nm4_manager_request_arbitrate();
+        s_lk_had_wifi_ip = has_ip;
         if (has_ip) {
             /* Got IP, reset timer */
             if (lk->wifi_no_ip_since_ms != 0) {
@@ -407,6 +413,10 @@ void nm4_linkkeeper_tick(nm4_linkkeeper_t *lk, uint64_t now_ms)
         }
     }
 
+    if (lk->has_ppp && !nm4_sim_ppp_effective(lk)) {
+        return;
+    }
+
     if (lk->has_ppp && !path_exists(lk->ppp.device)) {
         tmp_log_ppp_recover("tty missing branch", lk->ppp.device[0] ? lk->ppp.device : "(empty)", -100, -100);
         lk->ppp_last_rc = -1;
@@ -447,6 +457,12 @@ void nm4_linkkeeper_tick(nm4_linkkeeper_t *lk, uint64_t now_ms)
             (void)snprintf(lk->ppp_last_msg, sizeof(lk->ppp_last_msg), "keepalive ok");
             if (g_lk_log_enabled)
                 netmgr_v4_log("linkkeeper: ppp keepalive ok");
+        }
+        {
+            int ppp_ip = nm4_if_has_ipv4(lk->ppp.ifname[0] ? lk->ppp.ifname : "ppp0");
+            if (ppp_ip && !s_lk_had_ppp_ip)
+                nm4_manager_request_arbitrate();
+            s_lk_had_ppp_ip = ppp_ip;
         }
     }
 }

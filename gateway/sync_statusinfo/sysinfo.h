@@ -6,68 +6,68 @@
 #include <stdint.h>
 
 
-// ÄÚÖÃ±íµÄdatabase Ç°ÃæÆ¬¶Î£¬ÓÃÓÚÍø¹ØºÍÄÚÖÃ±í¶¼ÄÜ»ñÈ¡µ½ÏµÍ³×´Ì¬ÓÃÍ¾
+// ???????database ?????????????????????????????????????
 #define KEY_NUM     2
 
 struct db_database_info_type
 {
-    uint16_t version;           //°æ±¾ºÅ
+    uint16_t version;           //?????
     uint16_t md5;               //md5 
-    uint16_t size;              //½á¹¹Ìå´óĞ¡  
-    uint16_t reserve[61];       //Õ¼Î»£¬¾¡Á¿²»Ó°ÏìºóÃæµÄ½á¹¹Ìå
+    uint16_t size;              //???????  
+    uint16_t reserve[61];       //?????????????????????
 };
 
 
 /*
-    //Éè±¸ĞÅÏ¢£¬65000ÌØÊâ¼Ä´æÆ÷¶Î
+    //????????65000??????????
 */
 struct db_info_device_type
 {
-    uint16_t  SpecialSymbol;        //ÌØÊâ±êÊ¶
-    char      device[16];           //²úÆ·ĞÍºÅ
-    uint16_t  encrypt;              //ÊÇ·ñ¼ÓÃÜ£¬0±íÊ¾Î´¼ÓÃÜ£¬1±íÊ¾¼ÓÃÜ
-    uint32_t  pt;                   //PT±ä±È£¬¼ÆËãÒò×Ó0.01   100 (1.00)
-    uint32_t  ct;                   //CT±ä±È£¬¼ÆËãÒò×Ó0.01
-    uint16_t  ProtocolVer;          //Ğ­Òé°æ±¾ºÅ
-    uint16_t  SoftVersion;          //Èí¼ş°æ±¾ºÅ 
-    uint16_t  TestVersion;          //²âÊÔ°æ±¾ºÅ   
-    uint16_t  HardVersion;          //Ó²¼ş°æ±¾ºÅ
-    char      CustomInfo[24];       //¶¨ÖÆµ¥ĞÅÏ¢
-    char      SNInfo[48];           // SNºÅĞÅÏ¢
+    uint16_t  SpecialSymbol;        //??????
+    char      device[16];           //??????
+    uint16_t  encrypt;              //???????0??????????1???????
+    uint32_t  pt;                   //PT????????????0.01   100 (1.00)
+    uint32_t  ct;                   //CT????????????0.01
+    uint16_t  ProtocolVer;          //????????
+    uint16_t  SoftVersion;          //????????? 
+    uint16_t  TestVersion;          //????????   
+    uint16_t  HardVersion;          //????????
+    char      CustomInfo[24];       //????????
+    char      SNInfo[48];           // SN?????
     uint16_t  reserve;
 }; 
 
 /*
-    °æ±¾ºÅĞÅÏ¢
+    ????????
 */
 struct db_info_version_type
 {
-    uint16_t SoftVersion;          //Èí¼ş°æ±¾ºÅ
-    uint16_t TestVersion;          //²âÊÔ°æ±¾ºÅ
-    uint8_t  CustomInfo[122];      //¶¨ÖÆµ¥ĞÅÏ¢
-    uint16_t HardVersion;          //Ó²¼ş°æ±¾ºÅ
+    uint16_t SoftVersion;          //?????????
+    uint16_t TestVersion;          //????????
+    uint8_t  CustomInfo[122];      //????????
+    uint16_t HardVersion;          //????????
     uint16_t reserve;
 };
 
 /*
-    ×´Ì¬±¨ÎÄ, ÓÉ½ø³Ìsync_status¸üĞÂ
-    ÆäËû½ø³Ì¶ÁÈ¡½øĞĞÉÏËÍ»òÏÔÊ¾µÈ²Ù×÷
+    ??????, ?????sync_status????
+    ???????????????????????????
 */
 struct db_info_status_type
 {
-    int16_t   SimIsInsert;          //ÊÇ·ñ²å¿¨
-    int16_t   SimIsReg;             //ÊÇ·ñ×¢²á
+    int16_t   SimIsInsert;          // AT+CPIN? ????SIM ready????ï¿½ï¿½??????????????????????????????
+    int16_t   SimIsReg;             //??????
     int16_t   SimCsq;               //SIM CSQ 0-31 -99
     // int16_t    SimRsrq;             //CESQ Rsrq
     int16_t   SimRsrp;              //CESQ Rsrp
     uint8_t   SimIccid[24];         //SIM ICCID
-    uint8_t   ModuleImei[16];       //Ä£¿éIMEI
+    uint8_t   ModuleImei[16];       //???IMEI
     uint32_t  MemFree;              //mem free, unit:kB
     uint32_t  DiskFree;             //rootfs free, unit:kB
-    uint16_t   poweroff_status;      //0:µôµç»Ö¸´ 0xF00F:²úÉúµôµç
+    uint16_t   poweroff_status;      //0:?????? 0xF00F:????????
     struct timeval poweroff_Time;
     uint16_t  wifi_ready;
-    uint16_t  reserve[1];           //Õ¼Î»£¬¾¡Á¿²»Ó°ÏìºóÃæµÄ½á¹¹Ìå
+    int16_t   SimDetect;            // simç¡¬ä»¶ç®¡è„šæ£€æµ‹ï¼Œ0=æœªæ’å¡ï¼Œ1=å·²æ’å¡
 };
 
 struct db_info_product_test_type
@@ -91,12 +91,12 @@ struct db_database_cfg_info_type
 
 struct db_database_type
 {
-    struct db_database_info_type            db_info;        //½á¹¹ÌåĞÅÏ¢
+    struct db_database_info_type            db_info;        //???????
     struct db_database_cfg_info_type        db_cfg_info;
 
-    // ÆäËûÎ´ÓÃµ½£¬Ôİ²»¼Ó½øÀ´£¬ÏêÏ¸¿É²é¿´ÄÚÖÃ±íµÄ db_struct.h
+    // ?????????????????????????????????? db_struct.h
 };
-// ENDOF ÄÚÖÃ±íµÄdatabase Ç°ÃæÆ¬¶Î£¬ÓÃÓÚÍø¹ØºÍÄÚÖÃ±í¶¼ÄÜ»ñÈ¡µ½ÏµÍ³×´Ì¬ÓÃÍ¾
+// ENDOF ???????database ?????????????????????????????????????
 
 
 
@@ -107,4 +107,5 @@ uint32_t sysinfo_eth_gateway(void);
 uint32_t sysinfo_eth_netmask(void);
 uint32_t sysinfo_eth_ip(void);
 uint64_t sysinfo_sn(void);
+int16_t  sysinfo_sim_detect(void);
 #endif

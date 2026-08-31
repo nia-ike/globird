@@ -561,7 +561,7 @@ int main(int argc, char *argv[])
                 b.wlan_up = (bitsbuf[1] == '1');
                 b.ppp_up = (bitsbuf[2] == '1');
                 r = nm4_policy_to_r(&b);
-                w = nm4_policy_pick_want(&b);
+                w = nm4_policy_pick_want(&b, NULL);
                 printf("[netmgrd_v4] policy bits=%s -> R=%u want=%s\n",
                        bitsbuf, (unsigned)r, nm4_policy_want_name(w));
                 return 0;
@@ -635,7 +635,7 @@ int main(int argc, char *argv[])
                     nm4_linkkeeper_tick(&lk, now);
                     if (table_mode) {
                         nm4_collect_bits(&bits);
-                        want = nm4_policy_pick_want(&bits);
+                        want = nm4_policy_pick_want(&bits, NULL);
                         have = nm4_route_get_have();
                         nm4_render_linkkeeper_table(now, tick, lk_interval_ms, cfgpath, &lk, &bits, want, have);
                     }

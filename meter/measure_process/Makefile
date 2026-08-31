@@ -83,7 +83,7 @@ CPPFLAGS  = -Wall
 # Added dead code elimination and LTO for smaller binary size
 LDFLAGS   =  -lm -pthread -Wl,--gc-sections -flto
 
-SOURCES = ../database/db_device ../database/db_msr_msgevent_api ../database/db_msgevent_api
+SOURCES = ../database/db_device ../database/db_msr_msgevent_api ../database/db_msgevent_api ../database/db_measure_info
 
 
 

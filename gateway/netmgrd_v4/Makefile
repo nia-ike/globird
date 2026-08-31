@@ -17,9 +17,12 @@ else
   $(info netmgrd_v4: 使用 $(CC) + sysroot — 供 ARM 目标机)
 endif
 
+METER_DB_DIR = ../../meter/database
+
 CFLAGS = -Wall -Wextra -std=c11 -O2 -D_GNU_SOURCE -D__USE_XOPEN \
          -I./include \
-         -I./src/lib
+         -I./src/lib \
+         -I$(METER_DB_DIR)
 
 ifneq ($(strip $(SYSROOT)),)
 CFLAGS += --sysroot=$(SYSROOT)
@@ -35,21 +38,26 @@ BIN_DIR = build/bin
 SRCS = $(SRC_DIR)/main.c \
        $(SRC_DIR)/log.c \
        $(SRC_DIR)/config_v3json.c \
+       $(SRC_DIR)/config_networkjson.c \
        $(SRC_DIR)/cJSON.c \
        $(SRC_DIR)/gateway.c \
        $(SRC_DIR)/probe.c \
        $(SRC_DIR)/policy.c \
+       $(SRC_DIR)/iface_avail.c \
        $(SRC_DIR)/route.c \
        $(SRC_DIR)/linkkeeper.c \
+       $(SRC_DIR)/hw_sim.c \
        $(SRC_DIR)/manager.c \
        $(SRC_DIR)/status.c \
        $(SRC_DIR)/adapter_util.c \
        $(SRC_DIR)/adapter_wpa.c \
        $(SRC_DIR)/adapter_ppp.c \
-       $(SRC_DIR)/dns.c
+       $(SRC_DIR)/dns.c \
+       $(SRC_DIR)/led.c
 
-OBJS = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
-TARGET = $(BIN_DIR)/netmgrd_v4
+OBJS = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS)) \
+       $(OBJ_DIR)/db_msgevent_api.o
+TARGET = $(BIN_DIR)/netmgrd
 
 .PHONY: all clean install strip debug print
 
@@ -62,6 +70,9 @@ $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ_DIR)/db_msgevent_api.o: $(METER_DB_DIR)/db_msgevent_api.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJS) | $(BIN_DIR)

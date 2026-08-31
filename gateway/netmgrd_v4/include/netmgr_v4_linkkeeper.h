@@ -83,4 +83,13 @@ void nm4_linkkeeper_set_intervals(uint64_t wifi_ms, uint64_t ppp_ms);
 *********************************************************************************************************/
 void nm4_linkkeeper_get_intervals(uint64_t *wifi_ms, uint64_t *ppp_ms);
 
+/*********************************************************************************************************
+** Function name:       nm4_linkkeeper_shutdown
+** Descriptions:        Stop WiFi/PPP adapters on manager exit so restart reapplies config.
+** input parameters:    lk      - linkkeeper state with ifnames.
+** output parameters:   NONE
+** Returned value:      NONE
+*********************************************************************************************************/
+void nm4_linkkeeper_shutdown(const nm4_linkkeeper_t *lk);
+
 #endif

@@ -6,6 +6,11 @@
 #include <fcntl.h>
 #include <sys/types.h>
 
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <netinet/in.h>
+#include <net/if.h>
+
 static int g_adapter_quiet;
 
 /*********************************************************************************************************
@@ -63,6 +68,32 @@ int nm4_pppd_running(const char *ifname)
              ifname);
     if (system(cmd) == 0)
         return 1;
+    return 0;
+}
+
+int nm4_if_has_ipv4(const char *ifname)
+{
+    int fd;
+    struct ifreq ifr;
+    struct sockaddr_in *sin;
+
+    if (!ifname || !ifname[0])
+        return 0;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+        return 0;
+
+    memset(&ifr, 0, sizeof(ifr));
+    (void)snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
+    if (ioctl(fd, SIOCGIFADDR, &ifr) == 0) {
+        sin = (struct sockaddr_in *)&ifr.ifr_addr;
+        if (sin->sin_family == AF_INET && sin->sin_addr.s_addr != 0) {
+            close(fd);
+            return 1;
+        }
+    }
+    close(fd);
     return 0;
 }
 

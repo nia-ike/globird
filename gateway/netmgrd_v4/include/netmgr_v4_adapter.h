@@ -82,4 +82,13 @@ int nm4_adapter_wpa_change_mac(const char *ifname, uint8_t mac_suffix);
 *********************************************************************************************************/
 uint8_t nm4_adapter_wpa_read_original_mac(const char *ifname);
 
+/*********************************************************************************************************
+** Function name:       nm4_adapter_wpa_renew
+** Descriptions:        Signal running udhcpc (SIGUSR1) to renew DHCP lease.
+** input parameters:    ifname  - WiFi interface name.
+** output parameters:   NONE
+** Returned value:      0 on success, -1 if udhcpc not running or signal failed.
+*********************************************************************************************************/
+int nm4_adapter_wpa_renew(const char *ifname);
+
 #endif

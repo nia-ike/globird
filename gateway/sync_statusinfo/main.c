@@ -72,46 +72,7 @@ void led_brightness(char *dev, int enable)
 /*************************************************************************/
 void led_signal(int rsrp)
 {
-#define DEV_LED_SIGNAL_1    "/sys/class/leds/signal_1/brightness"
-#define DEV_LED_SIGNAL_2    "/sys/class/leds/signal_2/brightness"
-#define DEV_LED_SIGNAL_3    "/sys/class/leds/signal_3/brightness"
-#define DEV_LED_SIGNAL_4    "/sys/class/leds/signal_4/brightness"
 
-    if(rsrp < 8)
-    {
-        led_brightness(DEV_LED_SIGNAL_1, 0);
-        led_brightness(DEV_LED_SIGNAL_2, 0);
-        led_brightness(DEV_LED_SIGNAL_3, 0);
-        led_brightness(DEV_LED_SIGNAL_4, 0);
-    }
-    else if(rsrp < 18)
-    {
-        led_brightness(DEV_LED_SIGNAL_1, 1);
-        led_brightness(DEV_LED_SIGNAL_2, 0);
-        led_brightness(DEV_LED_SIGNAL_3, 0);
-        led_brightness(DEV_LED_SIGNAL_4, 0);
-    }
-    else if(rsrp < 25)
-    {
-        led_brightness(DEV_LED_SIGNAL_1, 1);
-        led_brightness(DEV_LED_SIGNAL_2, 1);
-        led_brightness(DEV_LED_SIGNAL_3, 0);
-        led_brightness(DEV_LED_SIGNAL_4, 0);
-    }
-    else if(rsrp < 30)
-    {
-        led_brightness(DEV_LED_SIGNAL_1, 1);
-        led_brightness(DEV_LED_SIGNAL_2, 1);
-        led_brightness(DEV_LED_SIGNAL_3, 1);
-        led_brightness(DEV_LED_SIGNAL_4, 0);
-    }
-    else 
-    {
-        led_brightness(DEV_LED_SIGNAL_1, 1);
-        led_brightness(DEV_LED_SIGNAL_2, 1);
-        led_brightness(DEV_LED_SIGNAL_3, 1);
-        led_brightness(DEV_LED_SIGNAL_4, 1);
-    }
 }
 
 
@@ -157,7 +118,7 @@ static int lte_module_process(char *devtty, int l)
          DataMgmtFops.writepoint_string(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_ICCID, iccid, sizeof(iccid));
     }
        
-    // sim status
+    // sim status (AT 命令，模组级)
     lfval = gsm_at_get_sw_sim_insert(fd);
     DataMgmtFops.writepoint(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_SIM, &lfval);
     pStatusInfo->SimIsInsert = lfval;
@@ -211,19 +172,27 @@ static int lte_module_process(char *devtty, int l)
 /*************************************************************************/
 int loopit(char *devtty, int l)
 {
-#define MAX_SYSINFO_INV  5
-    int fd;
-    int ret = 0;
-    int cnt = 2;
+#define SIM_DETECT_INV_SEC  1
+#define SYSINFO_INV_SEC     5   /* LTE 模组信息读取周期 */
+#define NETINFO_INV_SEC     15  /* 网络/系统信息读取周期（原 cnt>2 每 3 轮 × 5s） */
+    int tick = 0;
     double lfval;
     int64_t i64val;
     struct db_info_status_type *pStatusInfo = &pDB->db_cfg_info.status; 
 
     while(1)
     {
-        if(cnt++ > 2)
+        pStatusInfo->SimDetect = sysinfo_sim_detect();
+        if(debug)
         {
-            cnt = 0;
+            printf("SimDetect:%d\n", pStatusInfo->SimDetect);
+        }
+
+        if (tick % SYSINFO_INV_SEC == 0)
+            lte_module_process(devtty, l);
+
+        if (tick % NETINFO_INV_SEC == 0)
+        {
             // system ram 
             lfval = sysinfo_ram_free();
             DataMgmtFops.writepoint(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_MOMERY, &lfval);
@@ -262,13 +231,9 @@ int loopit(char *devtty, int l)
                 printf("Gateway:%X\n", sysinfo_eth_gateway());
             }
         }
-        
 
-        // lte module running process
-        lte_module_process(devtty, l);
-
-
-        sleep(MAX_SYSINFO_INV);
+        tick++;
+        sleep(SIM_DETECT_INV_SEC);
     }
 
     return 0;

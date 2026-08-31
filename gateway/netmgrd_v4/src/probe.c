@@ -90,6 +90,13 @@ static bool check_link(const char *ifname)
     }
 }
 
+int nm4_if_link_up(const char *ifname)
+{
+    if (!ifname || !ifname[0])
+        return 0;
+    return check_link(ifname) ? 1 : 0;
+}
+
 /*********************************************************************************************************
 ** Function name:       check_ip
 ** Descriptions:        Return true if interface has at least one AF_INET address.

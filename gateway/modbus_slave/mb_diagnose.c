@@ -1494,7 +1494,7 @@ static int mb_diag_handle_res_summary(uint8_t dev_addr, uint8_t *resp_pdu,
     memset(imei, 0, sizeof(imei));
     memset(iccid, 0, sizeof(iccid));
     mb_diag_read_file_line("/userdata/system/sn", sn, sizeof(sn));
-    mb_diag_read_file_line("/userdata/config/system/model", model, sizeof(model));
+    mb_diag_read_file_line("/userdata/system/model", model, sizeof(model));
     if (DataMgmtFops.readpoint_string(MB_DIAG_WC_CHNL, MB_DIAG_WC_DEV,
                                       MB_DIAG_WC_IMEI, imei, sizeof(imei)) < 0)
         imei[0] = '\0';

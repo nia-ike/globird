@@ -57,6 +57,15 @@ void nm4_probe_params_default(nm4_probe_params_t *p);
 int  nm4_if_exists(const char *ifname);
 
 /*********************************************************************************************************
+** Function name:       nm4_if_link_up
+** Descriptions:        Cheap L1 check: carrier or IFF_UP+RUNNING; see nm4_probe_link in src/probe.c.
+** input parameters:    ifname  - interface name.
+** output parameters:   NONE
+** Returned value:      1 if link appears up, else 0.
+*********************************************************************************************************/
+int  nm4_if_link_up(const char *ifname);
+
+/*********************************************************************************************************
 ** Function name:       nm4_probe_result_clear
 ** Descriptions:        Zero all fields of out before composing stepwise probes; see src/probe.c.
 ** input parameters:    out     - result struct (may be NULL, no-op).

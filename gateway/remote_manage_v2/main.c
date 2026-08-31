@@ -70,12 +70,12 @@ int main(int argc, char **argv)
         .version = "not set",
         .attr = {
             .checked = 1,
-            .url = "ego.pmac.com.cn:1883",
+            .url = "taso.energyun.com.cn:1883",
             //.url = "14.115.88.120:1883",
             .user = "pilot",
             .passwd = "pilot@123456", 
 
-            .ip = "ego.pmac.com.cn",
+            .ip = "taso.energyun.com.cn",
             //.ip = "14.115.88.120",
             .port = 1883,
         },

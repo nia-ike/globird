@@ -19,4 +19,6 @@ typedef enum {
 *********************************************************************************************************/
 int nm4_manager_run(const char *cfgpath, bool debug, nm4_manager_view_t view);
 
+void nm4_manager_request_arbitrate(void);
+
 #endif

@@ -32,8 +32,8 @@ all:
 	cp sampling/sampling_cs104/sampling_iec104 bin/
 	cp sampling/sampling_opc_ua/sampling_opc_ua bin/
 	cp sync_statusinfo/sync_statusinfo bin/
-	cp key_reset/key_reset bin/
 	cp remote_manage_v2/remote_manage bin/
+	cp netmgrd_v4/build/bin/netmgrd bin/
 	cp iec104_slave/iec104_slave bin/
 	cp opc_ua_slave/opc_ua_slave bin/
 	cp iobridge/iobridge bin/

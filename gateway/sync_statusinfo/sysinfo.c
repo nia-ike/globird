@@ -2,12 +2,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/ioctl.h>
+#include <linux/input.h>
 #include <sys/vfs.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
 #include "sysinfo.h"
+
+#define DEV_SIM_DETECT      "/dev/input/event1"
+#define KEY_SIM_DETECT      12   /* gpio-keys DTS 中 sim_detect 的 linux,code */
 
 
 /*************************************************************************/
@@ -189,4 +197,31 @@ uint64_t sysinfo_sn(void)
     sscanf(sn, "TSG%lld", &u32sn);
     
     return u32sn;
+}
+
+/*************************************************************************/
+/** Function Name:                                                     **/
+/** Purpose:                                                           **/
+/** Params:            None.                                           **/
+/** Return:            -1:检测失败；0:未插卡；1:已插卡                        **/
+/** Notice:            与 SimIsInsert 不同，本值来自硬件 IO 管脚。           **/
+/*************************************************************************/
+int16_t sysinfo_sim_detect(void)
+{
+    int fd;
+    unsigned char key_map[(KEY_MAX + 7) / 8];
+    int state = -1;
+
+    fd = open(DEV_SIM_DETECT, O_RDONLY | O_NONBLOCK);
+    if (fd < 0)
+        return -1;
+
+    memset(key_map, 0, sizeof(key_map));
+    if (ioctl(fd, EVIOCGKEY(sizeof(key_map)), key_map) >= 0) {
+        /* gpio-keys 电平与插卡状态相反，取反后：0=未插卡，1=已插卡 */
+        state = !(key_map[KEY_SIM_DETECT / 8] & (1 << (KEY_SIM_DETECT % 8)));
+    }
+
+    close(fd);
+    return (int16_t)state;
 }

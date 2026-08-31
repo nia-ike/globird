@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #include <arpa/inet.h>
@@ -31,6 +32,81 @@ static int trim_in_place(char *s)
     *b = '\0';
     if (a != s) memmove(s, a, (size_t)(b - a + 1));
     return s[0] ? 0 : -1;
+}
+
+/*********************************************************************************************************
+** Function name:       nm4_run_dir_ensure
+** Descriptions:        Create /var/run/netmgr if missing.
+** input parameters:    NONE
+** output parameters:   NONE
+** Returned value:      0 on success, -1 on error.
+*********************************************************************************************************/
+int nm4_run_dir_ensure(void)
+{
+    if (mkdir(NM4_NETMGR_RUN_DIR, 0755) == 0)
+        return 0;
+    if (access(NM4_NETMGR_RUN_DIR, F_OK) == 0)
+        return 0;
+    return -1;
+}
+
+/*********************************************************************************************************
+** Function name:       nm4_gw_cache_write
+** Descriptions:        Write gateway IPv4 to /var/run/netmgr/gateway.<ifname>.
+** input parameters:    ifname  - interface name.
+**                      gw      - dotted-quad gateway (NULL clears cache).
+** output parameters:   NONE
+** Returned value:      0 on success, -1 on error.
+*********************************************************************************************************/
+int nm4_gw_cache_write(const char *ifname, const char *gw)
+{
+    char path[256];
+    FILE *fp;
+    char tmp[64];
+    struct in_addr a;
+
+    if (!ifname || !ifname[0])
+        return -1;
+    if (nm4_run_dir_ensure() != 0)
+        return -1;
+
+    snprintf(path, sizeof(path), "%s/gateway.%s", NM4_NETMGR_RUN_DIR, ifname);
+    if (!gw || !gw[0]) {
+        (void)unlink(path);
+        return 0;
+    }
+    (void)snprintf(tmp, sizeof(tmp), "%s", gw);
+    if (trim_in_place(tmp) != 0)
+        return -1;
+    if (inet_pton(AF_INET, tmp, &a) != 1)
+        return -1;
+
+    fp = fopen(path, "w");
+    if (!fp)
+        return -1;
+    (void)fprintf(fp, "%s\n", tmp);
+    if (fclose(fp) != 0)
+        return -1;
+    return 0;
+}
+
+/*********************************************************************************************************
+** Function name:       nm4_gw_cache_clear
+** Descriptions:        Remove gateway cache file for interface.
+** input parameters:    ifname  - interface name.
+** output parameters:   NONE
+** Returned value:      0 on success, -1 if missing or error.
+*********************************************************************************************************/
+int nm4_gw_cache_clear(const char *ifname)
+{
+    char path[256];
+
+    if (!ifname || !ifname[0])
+        return -1;
+    snprintf(path, sizeof(path), "%s/gateway.%s", NM4_NETMGR_RUN_DIR, ifname);
+    if (unlink(path) != 0 && access(path, F_OK) == 0)
+        return -1;
+    return 0;
 }
 
 /*********************************************************************************************************

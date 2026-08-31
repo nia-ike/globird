@@ -37,4 +37,6 @@ int nm4_run_cmd(const char *cmd);
 *********************************************************************************************************/
 void nm4_adapter_set_quiet(int quiet);
 
+int nm4_if_has_ipv4(const char *ifname);
+
 #endif
