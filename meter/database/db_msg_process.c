@@ -103,6 +103,8 @@ static int db_msg_key_event_listen(int fd, uint32_t ms)
         switch(pkey_event->code)
         {
             case DB_KEY_EVENT_CODE_PWROFF:
+            case DB_KEY_EVENT_CODE_DOWN:
+            case DB_KEY_EVENT_CODE_ENTER:
                 msg_general_evt.type = DB_EVENT_TYPE_KEY;
                 db_msg_event_api_post(&msg_general_evt, sizeof(msg_general_evt));
             break;

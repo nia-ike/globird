@@ -202,6 +202,8 @@ int loopit(char *devtty, int l)
             DataMgmtFops.writepoint(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_DISK, &lfval);
             pStatusInfo->DiskFree = lfval;
 
+            pStatusInfo->wifi_ready = sysinfo_wifi_ready();
+
             // IP
             i64val = sysinfo_eth_ip();
             DataMgmtFops.writepoint_int64(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_IP, &i64val);
@@ -226,6 +228,7 @@ int loopit(char *devtty, int l)
             {
                 printf("Ram free:%d\n", pStatusInfo->MemFree);
                 printf("Disk free:%d\n", pStatusInfo->DiskFree);
+                printf("WiFi ready:%u\n", pStatusInfo->wifi_ready);
                 printf("IP:%X\n", sysinfo_eth_ip());
                 printf("Netmask:%X\n", sysinfo_eth_netmask());
                 printf("Gateway:%X\n", sysinfo_eth_gateway());

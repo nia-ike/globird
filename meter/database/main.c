@@ -78,6 +78,28 @@ static void poweroff_inc_counter(struct db_database_type *pDB)
     pDB->db_cfg_info.product_test.poweroff++;
 }
 
+/*************************************************************************/
+/** Function Name:                                     **/
+/** Purpose:           按键计数，用于生产测试用途                              **/
+/** Params:            None.                                               **/
+/** Return:            None.                                               **/
+/** Notice:            None.                                               **/
+/*************************************************************************/
+static void key_inc_counter(struct db_database_type *pDB, uint16_t keycode)
+{
+    switch (keycode)
+    {
+    case DB_KEY_EVENT_CODE_DOWN:
+        pDB->db_cfg_info.product_test.key[0]++;
+        break;
+    case DB_KEY_EVENT_CODE_ENTER:
+        pDB->db_cfg_info.product_test.key[1]++;
+        break;
+    default:
+        break;
+    }
+}
+
 
 /*************************************************************************/
 /** Function Name:                                                     **/
@@ -213,6 +235,11 @@ static int msg_process(void *vmem)
 
                     sync();
                 }
+                break;
+                case DB_KEY_EVENT_CODE_DOWN:
+                case DB_KEY_EVENT_CODE_ENTER:
+                if(pKey->value == DB_KEY_EVENT_RELEASE)
+                    key_inc_counter(pDB, pKey->code);
                 break;
             }
             break;

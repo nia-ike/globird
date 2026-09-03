@@ -53,7 +53,9 @@ SRCS = $(SRC_DIR)/main.c \
        $(SRC_DIR)/adapter_wpa.c \
        $(SRC_DIR)/adapter_ppp.c \
        $(SRC_DIR)/dns.c \
-       $(SRC_DIR)/led.c
+       $(SRC_DIR)/led.c \
+       $(SRC_DIR)/wifi_usb_watch.c \
+       $(SRC_DIR)/reboot.c
 
 OBJS = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS)) \
        $(OBJ_DIR)/db_msgevent_api.o

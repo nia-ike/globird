@@ -22,8 +22,9 @@
 #include "netmgr_v4_adapter.h"
 #include "netmgr_v4_led.h"
 #include "netmgr_v4_hw_sim.h"
+#include "netmgr_v4_wifi_usb_watch.h"
+#include "netmgr_v4_reboot.h"
 #include "adapter_internal.h"
-#include "db_msgevent_api.h"
 
 #define NM4_PENDING_WINDOW_MS 30000ULL
 #define NM4_TICK_MS 30000
@@ -91,17 +92,9 @@ static void night_reboot_maybe(nm4_want_t want, uint64_t now_ms)
     if (done_ymd == ymd)
         return;
 
-    if (db_msg_event_api_init() != 0) {
-        netmgr_v4_log("manager: night reboot deferred (db msg queue unavailable)");
-        return;
+    if (nm4_request_system_reboot("night all WAN down") == 0) {
+        done_ymd = ymd;
     }
-    if (db_msg_event_cmd(DB_EVENT_TYPE_REBOOT) != 0) {
-        netmgr_v4_log("manager: night reboot deferred (db reboot msg send failed)");
-        return;
-    }
-
-    done_ymd = ymd;
-    netmgr_v4_log("manager: 03:xx all WAN down, db_process save+reboot posted");
 }
 
 void nm4_manager_request_arbitrate(void)
@@ -1137,6 +1130,7 @@ int nm4_manager_run(const char *cfgpath, bool debug, nm4_manager_view_t view)
         nm4_iface_avail_to_bits(&eth_a, &wlan_a, &ppp_a, &bits);
         want = nm4_policy_pick_want(&bits, &snap.eth);
         night_reboot_maybe(want, t);
+        nm4_wifi_usb_watch_tick(t);
         changed = (memcmp(&bits, &prev, sizeof(bits)) != 0);
         mismatch = (want != have);
         if (changed) stats.bits_change_cnt++;

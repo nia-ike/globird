@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <sys/types.h> 
 #include <unistd.h> 
 #include <sys/stat.h>  //stat
@@ -213,7 +214,7 @@ static const ST_REG_4XXXX_ATTR   reg_4x_section[] = {
     { (struct remap_Modbus_node*)&remapSysPrthCfg_meter1[0],                 18380,     MB_SECTION_GET_REG_NUM(remapSysPrthCfg_meter1),             MB_TYPE_RAM,      RW_P ,   NULL,    mb_cfgsys_handle}, // system data
     { (struct remap_Modbus_node*)&remapSysCfgAdjustAdValue_meter1[0],        18420,     MB_SECTION_GET_REG_NUM(remapSysCfgAdjustAdValue_meter1),    MB_TYPE_RAM,      RW_P ,   NULL,    mb_cfgsys_handle}, // 校表,兼容多种电流互感器
     { (struct remap_Modbus_node*)&remapSysDeadZoneCfg_meter1[0],             18460,     MB_SECTION_GET_REG_NUM(remapSysDeadZoneCfg_meter1),         MB_TYPE_RAM,      RW_P ,     NULL,    mb_cfgsys_handle}, // 
-    { (struct remap_Modbus_node*)&remapSysInterfaceCfg_meter1[0],            18500,     MB_SECTION_GET_REG_NUM(remapSysInterfaceCfg_meter1),        MB_TYPE_RAM,      RO ,     NULL,    mb_cfgsys_handle}, // 
+    { (struct remap_Modbus_node*)&remapSysInterfaceCfg_meter1[0],            18500,     MB_SECTION_GET_REG_NUM(remapSysInterfaceCfg_meter1),        MB_TYPE_RAM,      RW_P ,     NULL,    mb_cfgsys_handle}, // 
     
     /* 命令 */
     { (struct remap_Modbus_node*)&remapCommandAdjust_meter1[0],              19800,     MB_SECTION_GET_REG_NUM(remapCommandAdjust_meter1),          MB_TYPE_RAM,      RW_P ,   NULL,    mb_cmd_adjust_handle_meter1}, // 校表,兼容多种电流互感器
@@ -295,9 +296,8 @@ static const ST_REG_4XXXX_ATTR   reg_4x_section[] = {
     { NULL,                                                      59067,      9,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_set_mac_handle     }, // 写mac 
     { NULL,                                                      59076,      13,                                              MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_set_model_handle     }, // 写型号
     { NULL,                                                      59089,      10,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_set_sn_handle     }, // 写sn  
-    // { NULL,                                                      59097,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_led_handle}, // led 测试
-    // { NULL,                                                      59098,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_lcd_handle}, // lcd测试
     { NULL,                                                      59099,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_envset_handle     }, // 测试环境
+    { NULL,                                                      59100,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_led_handle}, // led 测试
     { NULL,                                                      59101,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_clearE2_handle}, // 清电能
     { NULL,                                                      59102,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_historyE2_handle}, // 清电能
     { NULL,                                                      59111,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_clearMultirateE2_handle}, // 清电能
@@ -391,6 +391,36 @@ static uint16_t *mb_productTest_info_handle (struct mb_comm_ctx_t *pCtx, uint16_
 
 
 
+#define LED_PATH_RUN    "/sys/class/leds/run"
+#define LED_PATH_WIFI   "/sys/class/leds/wifi"
+#define LED_PATH_LTE    "/sys/class/leds/lte"
+#define LED_PATH_BT     "/sys/class/leds/bt"
+
+static void led_sysfs_write(const char *led, const char *attr, const char *val)
+{
+    char path[64];
+    int fd;
+
+    snprintf(path, sizeof(path), "%s/%s", led, attr);
+    fd = open(path, O_WRONLY);
+    if (fd < 0)
+        return;
+
+    (void)write(fd, val, strlen(val));
+    close(fd);
+}
+
+static void led_set_on(const char *led, int on)
+{
+    led_sysfs_write(led, "trigger", "none");
+    led_sysfs_write(led, "brightness", on ? "1" : "0");
+}
+
+static void led_restore_run_heartbeat(void)
+{
+    led_sysfs_write(LED_PATH_RUN, "trigger", "heartbeat");
+}
+
 /*********************************************************************************************************
 ** Function name:       mb_cmd_test_led_handle
 ** Descriptions:        led test
@@ -400,8 +430,46 @@ static uint16_t *mb_productTest_info_handle (struct mb_comm_ctx_t *pCtx, uint16_
 *********************************************************************************************************/
 static int mb_cmd_test_led_handle(struct mb_comm_ctx_t *pCtx, struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value)
 {
-    
-    return 0;
+    static const char * const led_paths[] = {
+        NULL,
+        LED_PATH_RUN,
+        LED_PATH_WIFI,
+        LED_PATH_LTE,
+        LED_PATH_BT,
+    };
+    uint16_t value;
+    int i;
+
+    (void)pCtx;
+    (void)pModifyConfig;
+    (void)reg_addr;
+    (void)reg_num;
+
+    value = MB_ALIGN_PT_16BIT_READ(p_value);
+
+    if (value == MB_WRITE_CMD)
+    {
+        for (i = 1; i <= 4; i++)
+            led_set_on(led_paths[i], 1);
+        return 0;
+    }
+
+    if (value == 0)
+    {
+        for (i = 1; i <= 4; i++)
+            led_set_on(led_paths[i], 0);
+        led_restore_run_heartbeat();
+        return 0;
+    }
+
+    if (value >= 1 && value <= 4)
+    {
+        for (i = 1; i <= 4; i++)
+            led_set_on(led_paths[i], (i == (int)value) ? 1 : 0);
+        return 0;
+    }
+
+    return -1;
 }
 
 

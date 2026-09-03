@@ -108,4 +108,8 @@ uint32_t sysinfo_eth_netmask(void);
 uint32_t sysinfo_eth_ip(void);
 uint64_t sysinfo_sn(void);
 int16_t  sysinfo_sim_detect(void);
+uint16_t sysinfo_wifi_ready(void);
+
+#define NM4_STATUS_JSON "/var/run/netmgr/status.json"
+
 #endif

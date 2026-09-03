@@ -49,6 +49,8 @@
 #define DB_KEY_DEV         				"/dev/input/event0"
 #define DB_KEY_EVENT_TYPE                  (1)
 #define DB_KEY_EVENT_CODE_PWROFF           (11)
+#define DB_KEY_EVENT_CODE_DOWN             (40)
+#define DB_KEY_EVENT_CODE_ENTER            (13)
 #define DB_KEY_EVENT_PRESSED               (1)
 #define DB_KEY_EVENT_RELEASE               (0)
 

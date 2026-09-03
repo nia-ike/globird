@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 
 #include "sysinfo.h"
+#include "cJSON.h"
 
 #define DEV_SIM_DETECT      "/dev/input/event1"
 #define KEY_SIM_DETECT      12   /* gpio-keys DTS 中 sim_detect 的 linux,code */
@@ -224,4 +225,70 @@ int16_t sysinfo_sim_detect(void)
 
     close(fd);
     return (int16_t)state;
+}
+
+static int json_is_true(const cJSON *item)
+{
+    return (item && cJSON_IsBool(item) && cJSON_IsTrue(item)) ? 1 : 0;
+}
+
+/*************************************************************************/
+/** Function Name:  sysinfo_wifi_ready                                 **/
+/** Purpose:        从 netmgrd_v4 status.json 读取 WiFi 就绪状态         **/
+/** Return:         0=未就绪；1=已连接且已获取 IPv4                        **/
+/*************************************************************************/
+uint16_t sysinfo_wifi_ready(void)
+{
+    FILE *fp = NULL;
+    long fsize;
+    char *buf = NULL;
+    size_t nread;
+    cJSON *root = NULL;
+    cJSON *ifaces = NULL;
+    cJSON *wlan = NULL;
+    uint16_t ready = 0;
+
+    fp = fopen(NM4_STATUS_JSON, "r");
+    if (!fp)
+        return 0;
+
+    if (fseek(fp, 0, SEEK_END) != 0)
+        goto out;
+
+    fsize = ftell(fp);
+    if (fsize <= 0 || fsize > 64 * 1024)
+        goto out;
+
+    rewind(fp);
+    buf = (char *)malloc((size_t)fsize + 1);
+    if (!buf)
+        goto out;
+
+    nread = fread(buf, 1, (size_t)fsize, fp);
+    if (nread != (size_t)fsize)
+        goto out;
+
+    buf[fsize] = '\0';
+
+    root = cJSON_Parse(buf);
+    if (!root)
+        goto out;
+
+    ifaces = cJSON_GetObjectItem(root, "interfaces");
+    wlan = ifaces ? cJSON_GetObjectItem(ifaces, "wlan0") : NULL;
+    if (wlan && json_is_true(cJSON_GetObjectItem(wlan, "exists")) &&
+        json_is_true(cJSON_GetObjectItem(wlan, "link")) &&
+        json_is_true(cJSON_GetObjectItem(wlan, "ipv4")))
+    {
+        ready = 1;
+    }
+
+out:
+    if (root)
+        cJSON_Delete(root);
+    free(buf);
+    if (fp)
+        fclose(fp);
+
+    return ready;
 }
