@@ -30,6 +30,7 @@
 #include "arm_const_structs.h"
 #include "msr_process.h"
 #include "Rn7302.h"
+#include "Rn7302_phasecheck.h"
 
 
 /* 谐波计算死区值 */
@@ -139,11 +140,21 @@ const float Fftcoefficient[THD_CNT]=
 /** Purpose:           从驱动buffer中获取n个半周波到                                               **/
 /** Params:            None.                                           **/
 /** Return:            None.                                           **/
-/** Notice:            None.                                           **/
+/** Notice:            电流按 PhaseAdjust 重映射物理通道后再送入 FFT        **/
 /*************************************************************************/
-static int msr_harmonic_rfft_data(struct hm_fft_piont_buffer *prfft, struct rn7302_waveform_buffer_t *pwaveform)
+static int msr_harmonic_rfft_data(struct hm_fft_piont_buffer *prfft,
+                                  struct rn7302_waveform_buffer_t *pwaveform,
+                                  struct db_cfg_user_para *pCfgUser)
 {
     int i;
+    const int *I_phys[3] = {
+        pwaveform->Ia,
+        pwaveform->Ib,
+        pwaveform->Ic,
+    };
+    uint16_t idx_a = Rn7302_phase_adj_to_ch_idx(pCfgUser->base.PhaseAdjust1.value);
+    uint16_t idx_b = Rn7302_phase_adj_to_ch_idx(pCfgUser->base.PhaseAdjust2.value);
+    uint16_t idx_c = Rn7302_phase_adj_to_ch_idx(pCfgUser->base.PhaseAdjust3.value);
 
     /* 将rn7302设备缓存波形数据复制到谐波运算的点数缓存 */
     for(i=0 ;i<WF_SAMPLES_CACHE_FRAME_SIZE; i++)
@@ -151,9 +162,10 @@ static int msr_harmonic_rfft_data(struct hm_fft_piont_buffer *prfft, struct rn73
         prfft->Ua[i] = (float)pwaveform->Ua[i];
         prfft->Ub[i] = (float)pwaveform->Ub[i];
         prfft->Uc[i] = (float)pwaveform->Uc[i];
-        prfft->Ia[i] = (float)pwaveform->Ia[i];
-        prfft->Ib[i] = (float)pwaveform->Ib[i];
-        prfft->Ic[i] = (float)pwaveform->Ic[i];
+        /* 相序调整：逻辑相电流取自对应物理通道波形 */
+        prfft->Ia[i] = (float)I_phys[idx_a][i];
+        prfft->Ib[i] = (float)I_phys[idx_b][i];
+        prfft->Ic[i] = (float)I_phys[idx_c][i];
     }
     
     return 0;
@@ -535,8 +547,8 @@ static void *msr_harmonic_thread_proc_entry(void *args)
             MSR_PORT_DELAY(1000);
             continue;
         }
-        /* 将rn7302设备缓存波形数据复制到谐波运算的点数缓存 */
-        msr_harmonic_rfft_data(&rfft_points, &waveform);
+        /* 将rn7302设备缓存波形数据复制到谐波运算的点数缓存（电流按相序重映射） */
+        msr_harmonic_rfft_data(&rfft_points, &waveform, pCfgUser);
 
         /* 开始计时 */
 //        struct timespec start_time, end_time;

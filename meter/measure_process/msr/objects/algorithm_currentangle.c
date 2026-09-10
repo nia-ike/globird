@@ -26,6 +26,7 @@
 #include "Rn7302.h"
 #include "Rn7302File.h"
 #include "Rn7302_register.h"
+#include "Rn7302_phasecheck.h"
 #include "algorithm_currentangle.h"
 #include "algorithm_voltageangle.h"
 
@@ -68,16 +69,9 @@ static int32_t current_angle_norm_360(int32_t angle)
 *********************************************************************************************************/
 static int32_t current_angle_by_phase_adjust(const int32_t yi_phys[3], uint16_t phase_adj, uint32_t i_mag)
 {
-    uint16_t ch;
     int32_t angle;
 
-    ch = (uint16_t)(phase_adj & 0x07U);
-    if ((ch < 1U) || (ch > 3U))
-    {
-        ch = 1U;
-    }
-
-    angle = yi_phys[ch - 1U];
+    angle = yi_phys[Rn7302_phase_adj_to_ch_idx(phase_adj)];
 
     /* CT 反向：电流相角偏移 180° */
     if ((phase_adj & 0x8000U) != 0U)

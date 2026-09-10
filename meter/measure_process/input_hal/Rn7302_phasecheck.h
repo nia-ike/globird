@@ -33,6 +33,13 @@ enum
 uint16_t get_ICHSEL_flag(void);
 
 /**
+ * @brief : 根据 PhaseAdjust 返回物理电流通道索引
+ * @param : phase_adj: PhaseAdjust 值，低 3 位 1/2/3 对应物理 A/B/C
+ * @return: 通道索引 0/1/2；非法值回退为 0（A 相）
+ */
+uint16_t Rn7302_phase_adj_to_ch_idx(uint16_t phase_adj);
+
+/**
  * @brief : 初始化电流通道选择
  * @param : pCfgUser: 用户配置参数指针
  * @return: None

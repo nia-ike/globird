@@ -111,28 +111,6 @@ static int32_t rms_algorithm_halfwave_phasecheck_off(struct db_database_measure_
 }
 
 /**
- * @brief : 按 phase_adj 调整物理通道电流值
- * @param : emui_val: 物理通道电流值
- * @param : phase_adj: PhaseAdjust 值
- * @return: 调整后的物理通道电流值
- */
-static int32_t current_halfwave_by_phase_adjust(const int32_t emui_val[3], uint16_t phase_adj)
-{
-    uint16_t ch;
-    int32_t current;
-
-    ch = (uint16_t)(phase_adj & 0x07U);
-    if ((ch < 1U) || (ch > 3U))
-    {
-        ch = 1U;
-    }
-
-    current = emui_val[ch - 1U];
-
-    return current;
-}
-
-/**
  * @brief : 相序调整后的半波算法，根据电压、电流有效值及功因计算有功功率
  * @param : pMeasureBase: 测量上下文
  * @param : out: 半波算法实时数据
@@ -194,6 +172,25 @@ static int32_t rms_algorithm_halfwave_apparentpower(struct db_database_measure_b
 }
 
 /**
+ * @brief : 相序调整后的半波算法，根据电压、电流有效值及功因计算有功功率
+ * @param : pMeasureBase: 测量上下文
+ * @param : out: 半波算法实时数据
+ * @param : input: 物理通道电流值
+ * @param : pt: 电压通道倍率
+ * @param : ct: 电流通道倍率
+ * @return: 0: 成功, -1: 失败
+ */
+static int32_t rms_algorithm_halfwave_powerfactor(struct db_database_measure_base_type *pMeasureBase, struct db_basic_realtime_type *out, void *input, uint32_t pt, uint32_t ct)
+{
+    out->PFa   = (out->Sa   != 0) ? (int16_t)((double)out->Pa   * 1000.0f / (double)out->Sa)   : 0;
+    out->PFb   = (out->Sb   != 0) ? (int16_t)((double)out->Pb   * 1000.0f / (double)out->Sb)   : 0;
+    out->PFc   = (out->Sc   != 0) ? (int16_t)((double)out->Pc   * 1000.0f / (double)out->Sc)   : 0;
+    out->PFtot = (out->Stot != 0) ? (int16_t)((double)out->Ptot * 1000.0f / (double)out->Stot) : 0;
+   
+    return 0;
+}
+
+/**
  * @brief : 全波算法补全半波算法里的功率因数和视在功率
  * @note  : 快速刷新寄存器里，没有视在功率和功率因数，因此我们在get_EmuHalf 去掉这部分，这里也不算。把功因和视在的数据从慢速拷贝过来即可
  * @param : pFullRealtime: 全波算法实时数据
@@ -239,16 +236,20 @@ static int32_t rms_algorithm_halfwave_phasecheck_on(struct db_database_measure_b
         pEmuHalfWave->IB,
         pEmuHalfWave->IC,
     };
-    pEmuHalfWave->IA = current_halfwave_by_phase_adjust(emui_val, pCfgUser->base.PhaseAdjust1.value);
-    pEmuHalfWave->IB = current_halfwave_by_phase_adjust(emui_val, pCfgUser->base.PhaseAdjust2.value);
-    pEmuHalfWave->IC = current_halfwave_by_phase_adjust(emui_val, pCfgUser->base.PhaseAdjust3.value);
+    pEmuHalfWave->IA = emui_val[Rn7302_phase_adj_to_ch_idx(pCfgUser->base.PhaseAdjust1.value)];
+    pEmuHalfWave->IB = emui_val[Rn7302_phase_adj_to_ch_idx(pCfgUser->base.PhaseAdjust2.value)];
+    pEmuHalfWave->IC = emui_val[Rn7302_phase_adj_to_ch_idx(pCfgUser->base.PhaseAdjust3.value)];
     rms_algorithm_halfwave_current(   pMeasure,  out,   pEmuHalfWave,  1, ct, time, hz);
+    rms_algorithm_frequency(          pMeasure,  out,   pEmuHalfWave,  1,  1);
 
     /* 
-        1. × 开启电流相序调整后，半波电流是否跟随调整？
-        2. x 开启相序调整后，谐波测量是否调整过来了？
+        1. √ 开启电流相序调整后，半波电流是否跟随调整？
+            - 半波电流未调整，需手动调整，已实现
+        2. √ 开启相序调整后，谐波测量是否调整过来了？
+            - 谐波有效值调整过来了，但谐波含有率未调整，还未实现
 
-        3. × 相间角度校准系数是否保存？
+        3. √ 相间角度校准系数是否保存？
+            - 已保存
         4. × 只加载电压或电流谐波时，快速刷新功率是否与全波、基波功率一致？
         
         5. √ 电流角度需手动调整
@@ -257,7 +258,7 @@ static int32_t rms_algorithm_halfwave_phasecheck_on(struct db_database_measure_b
     
     rms_algorithm_voltageangle          (   pMeasure,   out,    pEmuHalfWave,   1,  1   );
     rms_algorithm_currentangle          (   pMeasure,   out,    pEmuHalfWave,   1,  1   );
-
+    rms_algorithm_halfwave_powerfactor  (   pMeasure,   out,    pEmuHalfWave,   pt, ct  );
     rms_algorithm_halfwave_activepower  (   pMeasure,   out,    pEmuHalfWave,   pt, ct  );
     rms_algorithm_halfwave_reactivepower(   pMeasure,   out,    pEmuHalfWave,   pt, ct  );
     rms_algorithm_halfwave_apparentpower(   pMeasure,   out,    pEmuHalfWave,   pt, ct  );

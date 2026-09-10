@@ -221,30 +221,6 @@ void rn7302_waveform_start(void)
     MeterChipWriteReg(RN7302_REG_WREN, RN7302_LEN_WREN, tmp);
 }
 
-
-
-/**
- * @brief : 按 phase_adj 调整物理通道电流值
- * @param : emui_val: 物理通道电流值
- * @param : phase_adj: PhaseAdjust 值
- * @return: 调整后的物理通道电流值
- */
-static int32_t current_phs_i_by_phase_adjust(const int32_t phs_i_val[3], uint16_t phase_adj)
-{
-    uint16_t ch;
-    int32_t phs_i;
-
-    ch = (uint16_t)(phase_adj & 0x07U);
-    if ((ch < 1U) || (ch > 3U))
-    {
-        ch = 1U;
-    }
-
-    phs_i = phs_i_val[ch - 1U];
-
-    return phs_i;
-}
-
 /*************************************************************************/
 /** Function Name:                                                     **/
 /** Purpose:                                                           **/
@@ -329,10 +305,9 @@ void Rn7302Init(struct db_database_measure_base_type *pMeasureBase)
         Phs_I_val[0] = ((pCfgSys->adjust.Phs_Ia.value & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR1.value) | (((pCfgSys->adjust.Phs_Ia.value >> 10 & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR2.value)<< 10) | ((((pCfgSys->adjust.Phs_Ia.value >> 20) & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR3.value) << 20);
         Phs_I_val[1] = ((pCfgSys->adjust.Phs_Ib.value & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR1.value) | (((pCfgSys->adjust.Phs_Ib.value >> 10 & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR2.value)<< 10) | ((((pCfgSys->adjust.Phs_Ib.value >> 20) & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR3.value) << 20);
         Phs_I_val[2] = ((pCfgSys->adjust.Phs_Ic.value & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR1.value) | (((pCfgSys->adjust.Phs_Ic.value >> 10 & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR2.value)<< 10) | ((((pCfgSys->adjust.Phs_Ic.value >> 20) & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR3.value) << 20);
-
-        MeterChipWriteReg(RN7302_REG_PHSIA, RN7302_LEN_EX_PHSIA, current_phs_i_by_phase_adjust(Phs_I_val, pCfgUser->base.PhaseAdjust1.value));
-        MeterChipWriteReg(RN7302_REG_PHSIB, RN7302_LEN_EX_PHSIB, current_phs_i_by_phase_adjust(Phs_I_val, pCfgUser->base.PhaseAdjust2.value));
-        MeterChipWriteReg(RN7302_REG_PHSIC, RN7302_LEN_EX_PHSIC, current_phs_i_by_phase_adjust(Phs_I_val, pCfgUser->base.PhaseAdjust3.value));
+        MeterChipWriteReg(RN7302_REG_PHSIA, RN7302_LEN_EX_PHSIA, Phs_I_val[Rn7302_phase_adj_to_ch_idx(pCfgUser->base.PhaseAdjust1.value)]);
+        MeterChipWriteReg(RN7302_REG_PHSIB, RN7302_LEN_EX_PHSIB, Phs_I_val[Rn7302_phase_adj_to_ch_idx(pCfgUser->base.PhaseAdjust2.value)]);
+        MeterChipWriteReg(RN7302_REG_PHSIC, RN7302_LEN_EX_PHSIC, Phs_I_val[Rn7302_phase_adj_to_ch_idx(pCfgUser->base.PhaseAdjust3.value)]);
         // s32Tmp = ((pCfgSys->adjust.Phs_Ia.value & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR1.value) | (((pCfgSys->adjust.Phs_Ia.value >> 10 & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR2.value)<< 10) | ((((pCfgSys->adjust.Phs_Ia.value >> 20) & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR3.value) << 20);
         // s32Tmp = ((pCfgSys->adjust.Phs_Ib.value & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR1.value) | (((pCfgSys->adjust.Phs_Ib.value >> 10 & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR2.value)<< 10) | ((((pCfgSys->adjust.Phs_Ib.value >> 20) & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR3.value) << 20);
         // s32Tmp = ((pCfgSys->adjust.Phs_Ic.value & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR1.value) | (((pCfgSys->adjust.Phs_Ic.value >> 10 & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR2.value)<< 10) | ((((pCfgSys->adjust.Phs_Ic.value >> 20) & 0x3FF) + (int16_t)pCfgSys->prthvalue.PhsxR3.value) << 20);
