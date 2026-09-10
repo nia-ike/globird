@@ -31,7 +31,26 @@
 
 #include "Rn7302_register.h"
 #define ANGLE_MULTIPLE              100
+#define ANGLE_J360_MAX              (360 * ANGLE_MULTIPLE)
 #define ANGLE_CONVERT(x)            (((double)(x) * 360 * ANGLE_MULTIPLE / (1 << 24)) )
+
+int32_t angle_calc(uint32_t value, int32_t angle)
+{
+    if (value) {
+        return angle;
+    }
+    else {
+        return 0;
+    }
+}
+
+/* RN7302 相位寄存器 -> J_*（0.01 度，[0, 360)） */
+int32_t angle_emu_calc(int32_t emu_y)
+{
+    uint32_t val = (uint32_t)ANGLE_CONVERT(emu_y);
+
+    return (int32_t)((ANGLE_J360_MAX - val) % ANGLE_J360_MAX);
+}
 
 /*********************************************************************************************************
 ** Function name:       rms_algorithm_ActiverPowerJudge
@@ -98,63 +117,35 @@ static int32_t rms_algorithm_Judge(struct db_database_measure_base_type *pMeasur
 int32_t rms_algorithm_voltageangle(struct db_database_measure_base_type *pMeasureBase, struct db_basic_realtime_type *out, void *input, uint32_t pt, uint32_t ct)
 {
     uint16_t                             wireMode = 0;
-    uint16_t                               tmpVal = 0;
-    int32_t                                 value;
     struct db_cfg_user_para             *pCfgUser = &(pMeasureBase->db_cfg.user);                        /* 获取接线模式 */
     struct rn7302_emu                          *pEmu = (struct rn7302_emu*)input;
+
+    (void)pt;
+    (void)ct;
 
     wireMode = (pCfgUser->base.WiringMode.value & 0x03);
     switch (wireMode)
     {
     case P3W3:
         {
+            /* 角型模式下的电压角度在 linevoltage 中计算 */
             out->J_Va = 0;
             out->J_Vb = 0;
             out->J_Vc = 0;
-//            tmpVal = ANGLE_CONVERT(pEmu->YUA);
-//            tmpVal = 36000 - tmpVal;
-//            out->J_Va = (uint32_t)(3000 + tmpVal) % 36000;
-//            //out->J_Va = (uint32_t)tmpVal % 36000;
-//
-//            tmpVal = ANGLE_CONVERT(pEmu->YUB);
-//            tmpVal = 36000 - tmpVal;
-//            out->J_Vb = (uint32_t)(36000 - tmpVal) % 36000;
-//            //out->J_Vb = (uint32_t)tmpVal % 36000;
-//            
-//            tmpVal = ANGLE_CONVERT(pEmu->YUC);
-//            tmpVal = 36000 - tmpVal;
-//            out->J_Vc = (uint32_t)(3000 + tmpVal) % 36000;
-//            //out->J_Vc = (uint32_t)tmpVal % 36000;
-//            rms_algorithm_Judge(pMeasureBase, out);
-            break;  
-        }  
+            break;
+        }
     case P3W4:
         {
-            tmpVal = ANGLE_CONVERT(pEmu->YUA);
-            tmpVal = 36000 - tmpVal;
-            out->J_Va = tmpVal % 36000;
-
-            tmpVal = ANGLE_CONVERT(pEmu->YUB);
-            tmpVal = 36000 - tmpVal;
-            out->J_Vb =  tmpVal % 36000;
-
-            tmpVal = ANGLE_CONVERT(pEmu->YUC);
-            tmpVal = 36000 - tmpVal;
-            out->J_Vc = tmpVal % 36000;
+            out->J_Va = angle_emu_calc(pEmu->YUA);
+            out->J_Vb = angle_emu_calc(pEmu->YUB);
+            out->J_Vc = angle_emu_calc(pEmu->YUC);
             rms_algorithm_Judge(pMeasureBase, out);
-            break;    
+            break;
         }
     default:
         break;
     }
 
-/*
-
-
-    printf("J_Va: %d \n",out->db_realtime_other.J_Va);
-    printf("J_Vb: %d \n",out->db_realtime_other.J_Vb);
-    printf("J_Vc: %d \n",out->db_realtime_other.J_Vc);
-*/   
     return 0;
 }
 

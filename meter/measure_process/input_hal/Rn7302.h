@@ -1012,7 +1012,7 @@ enum
 #define  RN7302_REG_EMMCFG2_DEFAULT      0x04   			
 #define  RN7302_REG_EMMCFG2_HW           0x08 
 #define  RN7302_REG_EMUCFG3_HWEN         0x000001     			
-#define  RN7302_REG_EMUCFG3_FREQ         0x200000   		
+#define  RN7302_REG_EMUCFG3_FREQ         0x200010   		
 
 //----------------------------------
 #define  RN7302_READ_REG(a)             a

@@ -79,55 +79,14 @@
 uint16_t StateFlg = 0;
 int waveform_fd = -1;
 
-uint16_t ICHSEL_flag = 0;
-
-
 
 
 /*********************************************************************************************************
-** Function name:       set_ICHSEL_flag
-** Descriptions:        
-** input parameters:             
+** Function name:
+** Descriptions:
+** input parameters:
 ** output parameters:   NONE
-** Returned value:      
-*********************************************************************************************************/
-uint16_t set_ICHSEL_flag(uint16_t set_value)
-{
-    if((ICHSEL_OFF != set_value) && (ICHSEL_ON != set_value))
-    {
-        set_value = ICHSEL_OFF;
-    }
-
-    ICHSEL_flag = set_value;
-
-    return ICHSEL_flag;
-}
-
-/*********************************************************************************************************
-** Function name:       get_ICHSEL_flag
-** Descriptions:        
-** input parameters:             
-** output parameters:   NONE
-** Returned value:      
-*********************************************************************************************************/
-uint16_t get_ICHSEL_flag(void)
-{
-    uint16_t flag = ICHSEL_flag;
-
-    if((ICHSEL_OFF != flag) && (ICHSEL_ON != flag))
-    {
-        flag = ICHSEL_OFF;
-    }
-
-    return flag;
-}
-
-/*********************************************************************************************************
-** Function name:       
-** Descriptions:        
-** input parameters:             
-** output parameters:   NONE
-** Returned value:      
+** Returned value:
 *********************************************************************************************************/
 //static void rn7302_ioctl_hardware_rst(int args)
 //{
@@ -137,15 +96,14 @@ uint16_t get_ICHSEL_flag(void)
 
 
 /*********************************************************************************************************
-** Function name:       
-** Descriptions:        
-** input parameters:             
+** Function name:
+** Descriptions:
+** input parameters:
 ** output parameters:   NONE
-** Returned value:      
+** Returned value:
 *********************************************************************************************************/
 static void rms_algorithm_Rn7302(struct measure_ctx *pctx)
 {
-//    uint16_t    flag = get_ICHSEL_flag();
     struct db_database_type                        *pstVmem = (struct db_database_type *)pctx->pdb;
     struct db_database_measure_base_type         *pMeasure = &(pstVmem->db_measurebase[pctx->chip]);
     struct db_cfg_user_para                       *pCfgUser = &(pMeasure->db_cfg.user);
@@ -182,18 +140,18 @@ static void rms_algorithm_Rn7302(struct measure_ctx *pctx)
     }
     if(pctx->test != 1)
     {
-        rms_algorithm_fullwave(        pMeasure,         pFullwave,  pt,   ct);             
-        rms_algorithm_Primary_to_secondary(pMeasure, pRealtimeSecondary,    pt,   ct);      
-        rms_algorithm_fundwave(        pMeasure,         pFundwave,  pt,   ct);             
-        rms_algorithm_fundwave_secondary(pMeasure, pFunRealtimeSecondary,   pt,   ct);      
-        rms_algorithm_CurrentReverse(  pMeasure,         pFullwave,  pt,   ct);             
-        rms_algorithm_PowerCapOrInd(   pMeasure,         pFullwave,  pt,   ct);             
-        rms_algorithm_dmd_process(     pMeasure);             
-        rms_algorithm_demand_max(      pMeasure,        pDemandMax,  pt,   ct);             
-        rms_algorithm_extremum(        pMeasure,         pExtremum,  pt,   ct);             
-        rms_algorithm_biased(          pMeasure, pPowerqualiteBase,  pt,   ct);             
-        rms_algorithm_Unbalance(       pMeasure,        pUnbalance,         pt,   ct);      
-        rms_algorithm_loadrun(         pMeasure,          pLoadRun,  pt,   ct);             
+        rms_algorithm_fullwave(        pMeasure,         pFullwave,  pt,   ct);
+        rms_algorithm_Primary_to_secondary(pMeasure, pRealtimeSecondary,    pt,   ct);
+        rms_algorithm_fundwave(        pMeasure,         pFundwave,  pt,   ct);
+        rms_algorithm_fundwave_secondary(pMeasure, pFunRealtimeSecondary,   pt,   ct);
+        rms_algorithm_CurrentReverse(  pMeasure,         pFullwave,  pt,   ct);
+        rms_algorithm_PowerCapOrInd(   pMeasure,         pFullwave,  pt,   ct);
+        rms_algorithm_dmd_process(     pMeasure);
+        rms_algorithm_demand_max(      pMeasure,        pDemandMax,  pt,   ct);
+        rms_algorithm_extremum(        pMeasure,         pExtremum,  pt,   ct);
+        rms_algorithm_biased(          pMeasure, pPowerqualiteBase,  pt,   ct);
+        rms_algorithm_Unbalance(       pMeasure,        pUnbalance,         pt,   ct);
+        rms_algorithm_loadrun(         pMeasure,          pLoadRun,  pt,   ct);
     }
 }
 
@@ -253,20 +211,26 @@ void *msr_thread_proc(struct measure_ctx *pctx)
         case DB_MSR_EVENT_TYPE_TIMER:
             refreshNum = (1000/pctx->refresh);
             refreshNum = refreshNum == 0 ? 1 : refreshNum;     //  halfwave = 10ms,  so HZ = 100
-            hw++;            
-            rms_algorithm_halfwave(pMeasure, pMeasureHalf, hw);
+            hw++;
 
+            db_measure_info_halfwave_start(pMeasure);
+            rms_algorithm_halfwave(pMeasure, pMeasureHalf, hw);
             if ((hw % HALFWAVE_NUM) == 0)
+            {
                 db_measure_info_halfwave_done(pMeasure);
+                db_measure_info_halfwave_update_utc(pMeasure);
+            }
 
             if((hw % refreshNum) == 0)
             {
                 hw = 0;
                 if (TimeNum == 0)
                 {
+                    db_measure_info_full_cycle_start(pMeasure);
                     rms_algorithm_Rn7302(pctx);
                     rms_algorithm_Primary_to_secondary(pMeasure,pRealtimeSecondary,pt,ct);
                     db_measure_info_full_cycle_done(pMeasure);
+                    db_measure_info_full_cycle_update_utc(pMeasure);
                     pMeasurePrimary->DemoFlag = 1;
                 }
                 else
@@ -293,7 +257,6 @@ void *msr_thread_proc(struct measure_ctx *pctx)
             break;
         case DB_MSR_EVENT_TYPE_ADJUST_RST:
             printf("msr_thread_proc DB_MSR_EVENT_TYPE_ADJUST_RST\n");
-            
             Rn7302_Config(pMeasure, MSR_TYPE_RN7302_ADJUST_RST, 0);
             break;
         default:
@@ -356,11 +319,11 @@ static void msr_compat_old_version_adjust_config(struct db_cfg_sys_para *pCfgSys
 }
 
 /*********************************************************************************************************
-** Function name:       
-** Descriptions:        
-** input parameters:             
+** Function name:
+** Descriptions:
+** input parameters:
 ** output parameters:   NONE
-** Returned value:      
+** Returned value:
 *********************************************************************************************************/
 int32_t msr_init(struct measure_ctx *pctx)
 {
@@ -371,7 +334,7 @@ int32_t msr_init(struct measure_ctx *pctx)
 
     /*兼容 老版本选项是100A，功率校正是10A，新版本选项为5A，功率校正是5A校准*/
     msr_compat_old_version_adjust_config(pCfgSys);
-            
+
     /* 初始化rn7302 */
     Rn7302HFConstSet(pMeasure);
     Rn7302ADCCFGSet(pMeasure);

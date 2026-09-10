@@ -20,6 +20,7 @@
 #include "debug.h"
 #include "db_struct.h"
 #include "Rn7302_register.h"
+#include "Rn7302_phasecheck.h"
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -141,39 +142,26 @@ struct rn7302_emu * get_EmuHalf(void)
     EmuHalf.IB = value[4];
     EmuHalf.IC = value[5];
 
+    if (ICHSEL_ON == get_ICHSEL_flag())
+    {
+        MeterChipReadReg(RN7302_REG_YUA, RN7302_LEN_YUA,    (int32_t*)&EmuHalf.YUA  );       //YUA
+        MeterChipReadReg(RN7302_REG_YUB, RN7302_LEN_YUB,    (int32_t*)&EmuHalf.YUB  );       //YUB
+        MeterChipReadReg(RN7302_REG_YUC, RN7302_LEN_YUC,    (int32_t*)&EmuHalf.YUC  );       //YUC
+        MeterChipReadReg(RN7302_REG_YIA, RN7302_LEN_YIA,    (int32_t*)&EmuHalf.YIA  );       //YIA
+        MeterChipReadReg(RN7302_REG_YIB, RN7302_LEN_YIB,    (int32_t*)&EmuHalf.YIB  );       //YIB
+        MeterChipReadReg(RN7302_REG_YIC, RN7302_LEN_YIC,    (int32_t*)&EmuHalf.YIC  );       //YIC
+    }
+    else
+    {
+        MeterChipReadArea(RN7302_REG_SPL_PA, sizeof(value), value);
+        EmuHalf.PA = value[0];
+        EmuHalf.PB = value[1];
+        EmuHalf.PC = value[2];
+        EmuHalf.QA = value[3];
+        EmuHalf.QB = value[4];
+        EmuHalf.QC = value[5];
+    }
 
-    MeterChipReadArea(RN7302_REG_SPL_PA, sizeof(value), value);
-    EmuHalf.PA = value[0];
-    EmuHalf.PB = value[1];
-    EmuHalf.PC = value[2];
-    EmuHalf.QA = value[3];
-    EmuHalf.QB = value[4];
-    EmuHalf.QC = value[5];
-
-    // 以下参数实际上没有快速刷新，因此放在这里只会影响效率。先屏蔽
-//   MeterChipReadReg(RN7302_REG_PFA, RN7302_LEN_PFA,  (int32_t*)&EmuHalf.PfA  );       //PFA
-//   MeterChipReadReg(RN7302_REG_PFB, RN7302_LEN_PFB,  (int32_t*)&EmuHalf.PfB  );       //PFB
-//   MeterChipReadReg(RN7302_REG_PFC, RN7302_LEN_PFC,  (int32_t*)&EmuHalf.PfC  );       //PFC
-//   MeterChipReadReg(RN7302_REG_PFTV, RN7302_LEN_PFTV, (int32_t*)&EmuHalf.PfTV );       //PFT
-//   MeterChipReadReg(RN7302_REG_SA, RN7302_LEN_SA,   (int32_t*)&EmuHalf.SA   );       //SA
-//   MeterChipReadReg(RN7302_REG_SB, RN7302_LEN_SB,   (int32_t*)&EmuHalf.SB   );       //SB
-//   MeterChipReadReg(RN7302_REG_SC, RN7302_LEN_SC,   (int32_t*)&EmuHalf.SC   );       //SC
-//   MeterChipReadReg(RN7302_REG_STA, RN7302_LEN_STA,   (int32_t*)&EmuHalf.STA  );       //ST
-
-
-
-//    MeterChipReadReg(RN7302_REG_UA_HW, RN7302_LEN_UA_HW,   (int32_t*)&EmuHalf.UA   );       
-//    MeterChipReadReg(RN7302_REG_UB_HW, RN7302_LEN_UB_HW,   (int32_t*)&EmuHalf.UB   );       
-//    MeterChipReadReg(RN7302_REG_UC_HW, RN7302_LEN_UC_HW,   (int32_t*)&EmuHalf.UC   );       
-//    MeterChipReadReg(RN7302_REG_IA_HW, RN7302_LEN_IA_HW,   (int32_t*)&EmuHalf.IA   );       
-//    MeterChipReadReg(RN7302_REG_IB_HW, RN7302_LEN_IB_HW,   (int32_t*)&EmuHalf.IB   );       
-//    MeterChipReadReg(RN7302_REG_IC_HW, RN7302_LEN_IC_HW,   (int32_t*)&EmuHalf.IC   );       
-//    MeterChipReadReg(RN7302_REG_SPL_PA, RN7302_LEN_SPL_PA,  (int32_t*)&EmuHalf.PA   );       
-//    MeterChipReadReg(RN7302_REG_SPL_PB, RN7302_LEN_SPL_PB,  (int32_t*)&EmuHalf.PB   );       
-//    MeterChipReadReg(RN7302_REG_SPL_PC, RN7302_LEN_SPL_PC,  (int32_t*)&EmuHalf.PC   );       
-//    MeterChipReadReg(RN7302_REG_SPL_QA, RN7302_LEN_SPL_QA,  (int32_t*)&EmuHalf.QA   );       
-//    MeterChipReadReg(RN7302_REG_SPL_QB, RN7302_LEN_SPL_QB,  (int32_t*)&EmuHalf.QB   );       
-//    MeterChipReadReg(RN7302_REG_SPL_QC, RN7302_LEN_SPL_QC,  (int32_t*)&EmuHalf.QC   );  
     MeterChipReadReg(RN7302_REG_UFREQ, RN7302_LEN_UFREQ,   (int32_t*)&EmuHalf.UFreq );  
          
     return &EmuHalf;

@@ -15,9 +15,9 @@
             {"name":"PT",           "Val": 100,    "ValDef":    100,    "Max":1000000,       "Min": 100},
             {"name":"CT",           "Val": 100,    "ValDef":    100,    "Max":10000000,      "Min": 100},
             {"name":"RelayMode",    "Val":   1,    "ValDef":      1,    "Max":1, 	        "Min": 0},
-            {"name":"PhaseAdjust1", "Val":   1,    "ValDef":      1,    "Max":3, 	        "Min": 1},
-            {"name":"PhaseAdjust2", "Val":   2,    "ValDef":      2,    "Max":3, 	        "Min": 1},
-            {"name":"PhaseAdjust3", "Val":   3,    "ValDef":      3,    "Max":3, 	        "Min": 1},
+            {"name":"PhaseAdjust1", "Val":   1,    "ValDef":      1,    "Max":32771, 	        "Min": 1},
+            {"name":"PhaseAdjust2", "Val":   2,    "ValDef":      2,    "Max":32771, 	        "Min": 1},
+            {"name":"PhaseAdjust3", "Val":   3,    "ValDef":      3,    "Max":32771, 	        "Min": 1},
             {"name":"Language",     "Val":   0,    "ValDef":      0,    "Max":1, 	        "Min": 0}
         ],
         "pulse":[

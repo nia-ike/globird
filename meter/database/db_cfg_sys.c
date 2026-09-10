@@ -928,16 +928,16 @@ int db_cfg_sys_load(struct db_database_measure_base_type *pDB, const char *file,
         add by chenzy 2025 11 07
         新增的相位校正功能如果在旧设备上没有配置，则需要使用默认值
     */
-    if(pSysCfg->adjust.Phs_Ua.value == 0)
-    {
-        pSysCfg->adjust.Phs_Ua.value = phs_default[0];
-        pSysCfg->adjust.Phs_Ub.value = phs_default[1];
-        pSysCfg->adjust.Phs_Uc.value = phs_default[2];
-        pSysCfg->adjust.Phs_Ia.value = phs_default[3];
-        pSysCfg->adjust.Phs_Ib.value = phs_default[4];
-        pSysCfg->adjust.Phs_Ic.value = phs_default[5];
-        pSysCfg->adjust.Phs_In.value = phs_default[6];
-    }
+    // if(pSysCfg->adjust.Phs_Ua.value == 0)
+    // {
+    //     pSysCfg->adjust.Phs_Ua.value = phs_default[0];
+    //     pSysCfg->adjust.Phs_Ub.value = phs_default[1];
+    //     pSysCfg->adjust.Phs_Uc.value = phs_default[2];
+    //     pSysCfg->adjust.Phs_Ia.value = phs_default[3];
+    //     pSysCfg->adjust.Phs_Ib.value = phs_default[4];
+    //     pSysCfg->adjust.Phs_Ic.value = phs_default[5];
+    //     pSysCfg->adjust.Phs_In.value = phs_default[6];
+    // }
 
 
     /* get DEADZONE parameters from syscfg.json */

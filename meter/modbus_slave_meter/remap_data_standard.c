@@ -202,19 +202,20 @@ static const ST_REG_4XXXX_ATTR   reg_4x_section[] = {
     { (struct remap_Modbus_node*)&remapRealTimeFundwave_meter1[0],           10600,     MB_SECTION_GET_REG_NUM(remapRealTimeFundwave_meter1),       MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
     { (struct remap_Modbus_node*)&remapSeg_realtime_meter1[0],               11000,     MB_SECTION_GET_REG_NUM(remapSeg_realtime_meter1),           MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
     { (struct remap_Modbus_node*)&remapRealTimeDmd_meter1[0],                11200,     MB_SECTION_GET_REG_NUM(remapRealTimeDmd_meter1),            MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
-              /* 最大需量 日月 在block中，分别为 11300 11500  */     
+    { (struct remap_Modbus_node*)&remapMaxDmdDay_meter1[0],                  11300,     MB_SECTION_GET_REG_NUM(remapMaxDmdDay_meter1),              MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
+    { (struct remap_Modbus_node*)&remapMaxDmdMonth_meter1[0],                11500,     MB_SECTION_GET_REG_NUM(remapMaxDmdMonth_meter1),            MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
     { (struct remap_Modbus_node*)&remapRealTimeEnergyhp_meter1[0],           11700,     MB_SECTION_GET_REG_NUM(remapRealTimeEnergyhp_meter1),       MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
     { (struct remap_Modbus_node*)&remapMultirateEnergy_meter1[0],            11900,     MB_SECTION_GET_REG_NUM(remapMultirateEnergy_meter1),        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
-              /* 最值 在block中，分别为 13000 13400 */
-              /* 谐波 在block中，分别为 13800 13850 13900 14300 */
+        /* 最值 在block中，分别为 13000 13400 */
+        /* 谐波 在block中，分别为 13800 13850 13900 14300 */
         /* 配置数据 */
     { (struct remap_Modbus_node*)&remapUserBaseCfg_meter1[0],                18000,     MB_SECTION_GET_REG_NUM(remapUserBaseCfg_meter1),            MB_TYPE_RAM,      RW_NP ,  NULL,    mb_cfguser_handle}, // 
     { (struct remap_Modbus_node*)&remapSysAdjustCfg_meter1[0],               18300,     MB_SECTION_GET_REG_NUM(remapSysAdjustCfg_meter1),           MB_TYPE_RAM,      RW_P ,   NULL,    mb_cfgsys_handle}, // 
     { (struct remap_Modbus_node*)&remapSysAdjustAdCfg_meter1[0],             18340,     MB_SECTION_GET_REG_NUM(remapSysAdjustAdCfg_meter1),         MB_TYPE_RAM,      RW_P ,   NULL,    mb_cfgsys_handle}, // system data
     { (struct remap_Modbus_node*)&remapSysPrthCfg_meter1[0],                 18380,     MB_SECTION_GET_REG_NUM(remapSysPrthCfg_meter1),             MB_TYPE_RAM,      RW_P ,   NULL,    mb_cfgsys_handle}, // system data
     { (struct remap_Modbus_node*)&remapSysCfgAdjustAdValue_meter1[0],        18420,     MB_SECTION_GET_REG_NUM(remapSysCfgAdjustAdValue_meter1),    MB_TYPE_RAM,      RW_P ,   NULL,    mb_cfgsys_handle}, // 校表,兼容多种电流互感器
-    { (struct remap_Modbus_node*)&remapSysDeadZoneCfg_meter1[0],             18460,     MB_SECTION_GET_REG_NUM(remapSysDeadZoneCfg_meter1),         MB_TYPE_RAM,      RW_P ,     NULL,    mb_cfgsys_handle}, // 
-    { (struct remap_Modbus_node*)&remapSysInterfaceCfg_meter1[0],            18500,     MB_SECTION_GET_REG_NUM(remapSysInterfaceCfg_meter1),        MB_TYPE_RAM,      RW_P ,     NULL,    mb_cfgsys_handle}, // 
+    { (struct remap_Modbus_node*)&remapSysDeadZoneCfg_meter1[0],             18460,     MB_SECTION_GET_REG_NUM(remapSysDeadZoneCfg_meter1),         MB_TYPE_RAM,      RW_P ,   NULL,    mb_cfgsys_handle}, // 
+    { (struct remap_Modbus_node*)&remapSysInterfaceCfg_meter1[0],            18500,     MB_SECTION_GET_REG_NUM(remapSysInterfaceCfg_meter1),        MB_TYPE_RAM,      RW_P ,   NULL,    mb_cfgsys_handle}, // 
     
     /* 命令 */
     { (struct remap_Modbus_node*)&remapCommandAdjust_meter1[0],              19800,     MB_SECTION_GET_REG_NUM(remapCommandAdjust_meter1),          MB_TYPE_RAM,      RW_P ,   NULL,    mb_cmd_adjust_handle_meter1}, // 校表,兼容多种电流互感器
@@ -325,8 +326,8 @@ static const ST_REG_4XXXX_ATTR   reg_4x_section[] = {
 static ST_REG_4XXXX_ATTR_BLOCK reg_4x_block_sector[] = {
     /*       存储位置基址                                                           寄存器起始位置   寄存器个数  类型          读写权限                 回调*/
     /* METER 1 */
-    { (struct remap_Modbus_block_node *)&remapMaxDmdDay_meter1[0],                    11300,      0,        MB_TYPE_RAM,      RO ,       NULL,	    NULL         },
-    { (struct remap_Modbus_block_node *)&remapMaxDmdMonth_meter1[0],                  11500,      0,        MB_TYPE_RAM,      RO ,       NULL,	    NULL         },
+    // { (struct remap_Modbus_block_node *)&remapMaxDmdDay_meter1[0],                    11300,      0,        MB_TYPE_RAM,      RO ,       NULL,	    NULL         },
+    // { (struct remap_Modbus_block_node *)&remapMaxDmdMonth_meter1[0],                  11500,      0,        MB_TYPE_RAM,      RO ,       NULL,	    NULL         },
 
     //    { (struct remap_Modbus_node*)&remapEnergyFourquadrant_meter1[0],                12100,      0,        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
 //    { (struct remap_Modbus_node*)&remapEnergyFundwave_meter1[0],                    12400,      0,        MB_TYPE_RAM,      RO ,     NULL,    NULL}, // 
@@ -715,6 +716,27 @@ static int mb_cfgusermultirage_handle(struct mb_comm_ctx_t *pCtx,  struct remap_
 
 
 /*********************************************************************************************************
+** Function name:       mb_cfguser_handle_process
+** Descriptions:        用户数据写入后生效处理（接线模式 / 相序调整变更后重初始化计量芯片）
+**                      meter1: 18006 WiringMode, 18011~18013 PhaseAdjust
+**                      meter2: 28006 / 28011~28013
+**                      meter3: 38006 / 38011~38013
+*********************************************************************************************************/
+static void mb_cfguser_handle_process(struct mb_comm_ctx_t *pCtx, uint16_t reg_addr, uint16_t reg_num)
+{
+    uint16_t reg_end = reg_addr + reg_num;
+
+    (void)pCtx;
+
+    /* meter1 */
+    if (((reg_addr <= 18006) && (18006 < reg_end))
+    ||  ((reg_addr <= 18013) && (18011 < reg_end)))
+    {
+        db_msr_msg_event_cmd(CHANNLNO_RN7302_1, DB_MSR_EVENT_TYPE_REINIT);
+    }
+}
+
+/*********************************************************************************************************
 ** Function name:       mb_cfguser_handle
 ** Descriptions:        用户数据写回调
 ** input parameters:    NONE
@@ -799,6 +821,9 @@ static int mb_cfguser_handle(struct mb_comm_ctx_t *pCtx,  struct remap_Modbus_no
         POST message for update the setting of user
     */
     db_msg_event_cmd(DB_EVENT_TYPE_USER_RAM_TO_JSON);
+
+    /* 接线模式 / 相序调整变更后重新初始化计量芯片 */
+    mb_cfguser_handle_process(pCtx, reg_addr, reg_num);
     return 0;
 }
 

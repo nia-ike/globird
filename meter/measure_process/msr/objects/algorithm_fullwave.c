@@ -46,7 +46,7 @@
 #include "algorithm_energy_multirate_hp.h"
 #include "algorithm_energy_realtime_translate.h"
 #include "Rn7302_read.h"
-
+#include "Rn7302_phasecheck.h"
 
 
 /*********************************************************************************************************
@@ -74,11 +74,11 @@ int32_t rms_algorithm_fullwave(struct db_database_measure_base_type *pMeasure, s
     struct db_cfg_user_para                  *pCfgUser       = &(pMeasure->db_cfg.user);
     struct db_energy_realtime_translate_type *pEngRtTrans    = &(pMeasure->db_measure.energy.realtime_translate);
 
-    if((pCfgUser->base.PhaseAdjust1.value != 1) || (pCfgUser->base.PhaseAdjust2.value != 2) || (pCfgUser->base.PhaseAdjust3.value != 3))
+    if (ICHSEL_ON == get_ICHSEL_flag())
     {
-        pEmuFullWave = get_EmuFund();  
+        pEmuFullWave   = get_EmuFund();  
         pEmuFullEnergy = get_EmuFundEnergy();
-        pNetEnergy = get_FundNetEnergy();
+        pNetEnergy     = get_FundNetEnergy();
     }
 
     /* 1. calculate the angle first */

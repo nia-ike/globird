@@ -87,18 +87,9 @@ enum
     RN8306_IOCTL_WAVEFORM_READ = _IO(RN7302_IOC_MAGIC, 4),
 };
 
-enum
-{
-    ICHSEL_OFF = 0,
-    ICHSEL_ON  = 1,
-};
 
 int32_t msr_init(struct measure_ctx *pctx);
 
 void *msr_thread_proc(struct measure_ctx *pctx);
-
-extern const char* RN7302_FILE_NAME[][2];
-uint16_t set_ICHSEL_flag(uint16_t set_value);
-uint16_t get_ICHSEL_flag(void);
 
 #endif // __MSR_PROCESS_H__

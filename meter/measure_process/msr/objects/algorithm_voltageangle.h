@@ -29,5 +29,7 @@
 #define PI 3.1415926
 
 int32_t rms_algorithm_voltageangle(struct db_database_measure_base_type *pMeasureBase, struct db_basic_realtime_type *out, void *input, uint32_t pt, uint32_t ct);
+int32_t angle_calc(uint32_t value, int32_t angle);
+int32_t angle_emu_calc(int32_t emu_y);
 
 #endif

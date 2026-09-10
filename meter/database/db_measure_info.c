@@ -15,6 +15,7 @@
 #include <string.h>
 #include "db_measure_info.h"
 #include "db_struct.h"
+#include <sys/time.h>
 
 void db_measure_info_init(struct db_measure_runtime_info_type *info)
 {
@@ -29,6 +30,14 @@ void db_measure_info_init(struct db_measure_runtime_info_type *info)
     info->version = DB_MEASURE_INFO_VERSION;
 }
 
+void db_measure_info_halfwave_start(struct db_database_measure_base_type *pBase)
+{
+    if (pBase == NULL)
+        return;
+
+    __atomic_add_fetch(&pBase->info.halfwave_seq, 1u, __ATOMIC_RELEASE);
+}
+
 void db_measure_info_halfwave_done(struct db_database_measure_base_type *pBase)
 {
     if (pBase == NULL)
@@ -37,10 +46,34 @@ void db_measure_info_halfwave_done(struct db_database_measure_base_type *pBase)
     __atomic_add_fetch(&pBase->info.halfwave_seq, 1u, __ATOMIC_RELEASE);
 }
 
+void db_measure_info_halfwave_update_utc(struct db_database_measure_base_type *pBase)
+{
+    if (pBase == NULL)
+        return;
+
+    __atomic_store_n(&pBase->info.halfwave_utc_seq, time(NULL), __ATOMIC_RELEASE);
+}
+
+void db_measure_info_full_cycle_start(struct db_database_measure_base_type *pBase)
+{
+    if (pBase == NULL)
+        return;
+
+    __atomic_add_fetch(&pBase->info.update_seq, 1u, __ATOMIC_RELEASE);
+}
+
 void db_measure_info_full_cycle_done(struct db_database_measure_base_type *pBase)
 {
     if (pBase == NULL)
         return;
 
     __atomic_add_fetch(&pBase->info.update_seq, 1u, __ATOMIC_RELEASE);
+}
+
+void db_measure_info_full_cycle_update_utc(struct db_database_measure_base_type *pBase)
+{
+    if (pBase == NULL)
+        return;
+
+    __atomic_store_n(&pBase->info.update_utc_seq, time(NULL), __ATOMIC_RELEASE);
 }

@@ -16,6 +16,7 @@
 #define __DB_MEASURE_INFO_H__
 
 #include <stdint.h>
+#include <time.h>
 
 struct db_database_measure_base_type;
 
@@ -29,12 +30,22 @@ struct db_measure_runtime_info_type
 
     uint32_t update_seq;         /* 全量测量刷新序号 */
     uint32_t halfwave_seq;       /* 半波有效刷新序号（2个连续半波合成1次） */
+    
+    time_t   update_utc_seq;     /* 全量测量UTC时间戳刷新序号 */
+    time_t   halfwave_utc_seq;   /* 半波有效UTC时间戳刷新序号 */
+    uint32_t status;             /* 设备状态 */
 
-    uint32_t reserved[12];
+    uint32_t reserved[9];
 };
 
 void db_measure_info_init(struct db_measure_runtime_info_type *info);
+
+void db_measure_info_halfwave_start(struct db_database_measure_base_type *pBase);
 void db_measure_info_halfwave_done(struct db_database_measure_base_type *pBase);
+void db_measure_info_halfwave_update_utc(struct db_database_measure_base_type *pBase);
+
+void db_measure_info_full_cycle_start(struct db_database_measure_base_type *pBase);
 void db_measure_info_full_cycle_done(struct db_database_measure_base_type *pBase);
+void db_measure_info_full_cycle_update_utc(struct db_database_measure_base_type *pBase);
 
 #endif

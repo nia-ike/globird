@@ -360,11 +360,11 @@ static int32_t Rn7302Adjust_Angle(struct db_database_measure_base_type *pMeasure
     MeterChipWriteReg(RN7302_REG_WREN, RN7302_LEN_WREN, temp);
 
     pCfgSys->adjust.Phs_Ia.value = factorIAngle[0];
-    pCfgSys->adjust.Phs_Ib.value = factorIAngle[1];
-    pCfgSys->adjust.Phs_Ic.value = factorIAngle[2];
-    pCfgSys->adjust.Phs_Ua.value = factorUAngle[0];
-    pCfgSys->adjust.Phs_Ub.value = factorUAngle[1];
-    pCfgSys->adjust.Phs_Uc.value = factorUAngle[2];
+    pCfgSys->adjust.Phs_Ib.value = factorIAngle[1] + jba;
+    pCfgSys->adjust.Phs_Ic.value = factorIAngle[2] + jca;
+    pCfgSys->adjust.Phs_Ua.value = 0;
+    pCfgSys->adjust.Phs_Ub.value = jba;
+    pCfgSys->adjust.Phs_Uc.value = jca;
  
     
     return 0;
