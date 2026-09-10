@@ -145,6 +145,7 @@ static void rms_algorithm_Rn7302(struct measure_ctx *pctx)
         rms_algorithm_fundwave(        pMeasure,         pFundwave,  pt,   ct);
         rms_algorithm_fundwave_secondary(pMeasure, pFunRealtimeSecondary,   pt,   ct);
         rms_algorithm_CurrentReverse(  pMeasure,         pFullwave,  pt,   ct);
+        rms_algorithm_CurrentReverse(  pMeasure,         pFundwave,  pt,   ct);
         rms_algorithm_PowerCapOrInd(   pMeasure,         pFullwave,  pt,   ct);
         rms_algorithm_dmd_process(     pMeasure);
         rms_algorithm_demand_max(      pMeasure,        pDemandMax,  pt,   ct);
