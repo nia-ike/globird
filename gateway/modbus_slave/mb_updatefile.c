@@ -167,8 +167,8 @@ int mb_file_pkg_upgrade(struct mb_update_ctx_t *pNewCtx)
         /* verity / product hook before upgrade */
         MB_UPDATE_BEFORE_UPGRADE();
 
-        /* upgrade */
-        system("opkg install /tmp/update.ipk --force-reinstall");
+        /* persist to /userdata/ota then opkg (power-loss safe) */
+        system("/ech/script/ota_ipk.sh install /tmp/update.ipk &");
         return 0;
     }
 

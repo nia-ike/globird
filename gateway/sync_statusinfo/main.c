@@ -92,8 +92,12 @@ static int lte_module_process(char *devtty, int l)
     int ret;
     char iccid[24] = {0};
     char imei[16] = {0};
+    char oper[64] = {0};
     int rsrq = 0;
-    int rsrp = 0;
+    int rsrp = -1;
+    int sim = 0;
+    int creg = 0;
+    int csq = -1;
     struct db_info_status_type *pStatusInfo = &pDB->db_cfg_info.status; 
     
     double lfval;
@@ -110,46 +114,65 @@ static int lte_module_process(char *devtty, int l)
          DataMgmtFops.writepoint_string(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_IMEI, imei, sizeof(imei));
     }
 
-    // sim imei
+    // sim iccid
     ret = gsm_at_get_iccid(fd, iccid);
     if(!ret)
     {
         snprintf((char *)pStatusInfo->SimIccid, sizeof(pStatusInfo->SimIccid), "%s", iccid);
          DataMgmtFops.writepoint_string(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_ICCID, iccid, sizeof(iccid));
     }
+
+    // operator (AT+COPS?)
+    ret = gsm_at_get_cops(fd, oper, sizeof(oper));
+    if (ret != 0)
+        oper[0] = '\0';
        
     // sim status (AT 命令，模组级)
     lfval = gsm_at_get_sw_sim_insert(fd);
     DataMgmtFops.writepoint(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_SIM, &lfval);
     pStatusInfo->SimIsInsert = lfval;
+    sim = (int)lfval;
 
     // sim creg
     lfval = gsm_at_get_creg(fd);
     DataMgmtFops.writepoint(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_CREG, &lfval);
     pStatusInfo->SimIsReg = lfval;
+    creg = (int)lfval;
 
     // sim csq
     lfval = gsm_at_get_csq(fd);
     DataMgmtFops.writepoint(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_CSQ, &lfval);
     pStatusInfo->SimCsq = lfval;
+    csq = (int)lfval;
 
     // sim rsrp
     ret = gsm_at_get_cesq(fd, &rsrq, &rsrp);
-    lfval = rsrp;
-    if(ret)
+    if(!ret)
     {
+        lfval = rsrp;
         pStatusInfo->SimRsrp = lfval;
         DataMgmtFops.writepoint(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_RSRP, &lfval);
     }
-        
+    else
+    {
+        rsrp = (int)pStatusInfo->SimRsrp;
+    }
 
     close_serialport(fd);
+
+    /* 使用已落库的字符串，避免本轮 AT 失败时 JSON 被清空 */
+    (void)sysinfo_cellular_write(
+        (const char *)pStatusInfo->ModuleImei,
+        (const char *)pStatusInfo->SimIccid,
+        oper, sim, creg, csq, rsrp);
 
     if(debug)
     {
         printf("iccid:%s\n", pStatusInfo->SimIccid);
         printf("imei:%s\n", pStatusInfo->ModuleImei);
+        printf("operator:%s\n", oper);
         printf("csq:%d\n", pStatusInfo->SimCsq);
+        printf("rsrp:%d\n", rsrp);
     }
 
     if(l)

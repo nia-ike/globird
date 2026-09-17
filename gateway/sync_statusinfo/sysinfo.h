@@ -109,7 +109,12 @@ uint32_t sysinfo_eth_ip(void);
 uint64_t sysinfo_sn(void);
 int16_t  sysinfo_sim_detect(void);
 uint16_t sysinfo_wifi_ready(void);
+int      sysinfo_cellular_write(const char *imei, const char *iccid,
+                                const char *oper, int sim, int creg,
+                                int csq, int rsrp);
 
-#define NM4_STATUS_JSON "/var/run/netmgr/status.json"
+#define NM4_STATUS_DIR      "/var/run/netmgr"
+#define NM4_STATUS_JSON     "/var/run/netmgr/status.json"
+#define NM4_CELLULAR_JSON   "/var/run/netmgr/cellular.json"
 
 #endif

@@ -6,6 +6,7 @@
 #include <sys/ioctl.h>
 #include <linux/input.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include "gsm_at.h"
@@ -393,6 +394,85 @@ int gsm_at_get_imei(int fd, char *imei)
 
     return returnCode;
 
+}
+
+/*************************************************************************/
+/** Function Name:       gsm_at_get_cops                               **/
+/** Purpose:             解析 AT+COPS? 中的运营商长名（引号内）          **/
+/** Params:              oper / oper_len - 输出缓冲                     **/
+/** Return:              0 成功；-1 失败                                **/
+/** Notice:              例 +COPS: 0,0,"CHINA MOBILE",7                 **/
+/*************************************************************************/
+int gsm_at_get_cops(int fd, char *oper, size_t oper_len)
+{
+    fd_set rfds;
+    struct timeval timeout;
+    unsigned char buf[BUF_SIZE];
+    int sel, len, i, curlen;
+    int returnCode = -1;
+    char *p_cops;
+    char *p_q1;
+    char *p_q2;
+    size_t n;
+
+    if (!oper || oper_len == 0)
+        return -1;
+
+    oper[0] = '\0';
+
+    tcdrain(fd);
+    tcflush(fd, TCIOFLUSH);
+    write(fd, "at+cops?\r\n", strlen("at+cops?\r\n"));
+    curlen = 0;
+    for (i = 0; i < 20; i++)
+    {
+        FD_ZERO(&rfds);
+        FD_SET(fd, &rfds);
+
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+
+        if ((sel = select(fd + 1, &rfds, NULL, NULL, &timeout)) > 0)
+        {
+            if (FD_ISSET(fd, &rfds))
+            {
+                len = read(fd, buf + curlen, sizeof(buf) - curlen - 1);
+                if (len <= 0)
+                    break;
+
+                curlen += len;
+                buf[curlen] = 0;
+
+                if (strstr((char *)buf, "ERROR") != NULL)
+                    break;
+
+                if (strstr((char *)buf, "OK") != NULL)
+                {
+                    p_cops = strstr((char *)buf, "+COPS:");
+                    if (!p_cops)
+                        break;
+
+                    p_q1 = strchr(p_cops, '"');
+                    if (!p_q1)
+                        break;
+                    p_q1++;
+                    p_q2 = strchr(p_q1, '"');
+                    if (!p_q2)
+                        break;
+
+                    n = (size_t)(p_q2 - p_q1);
+                    if (n >= oper_len)
+                        n = oper_len - 1;
+                    memcpy(oper, p_q1, n);
+                    oper[n] = '\0';
+                    returnCode = 0;
+                    break;
+                }
+            }
+        }
+    }
+
+    return returnCode;
 }
 
 

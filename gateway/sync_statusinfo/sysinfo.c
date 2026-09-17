@@ -5,6 +5,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
+#include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <linux/input.h>
 #include <sys/vfs.h>
@@ -291,4 +293,85 @@ out:
         fclose(fp);
 
     return ready;
+}
+
+/*************************************************************************/
+/** Function Name:  json_escape_str                                    **/
+/** Purpose:        将字符串转义写入 out（不含两侧引号）                 **/
+/*************************************************************************/
+static void json_escape_str(char *out, size_t outlen, const char *in)
+{
+    size_t oi = 0;
+    const unsigned char *p;
+
+    if (!out || outlen == 0)
+        return;
+    out[0] = '\0';
+    if (!in)
+        return;
+
+    for (p = (const unsigned char *)in; *p && oi + 2 < outlen; ++p) {
+        if (*p == '"' || *p == '\\') {
+            if (oi + 3 >= outlen)
+                break;
+            out[oi++] = '\\';
+            out[oi++] = (char)*p;
+        } else if (*p >= 0x20 && *p != 0x7f) {
+            out[oi++] = (char)*p;
+        }
+    }
+    out[oi] = '\0';
+}
+
+/*************************************************************************/
+/** Function Name:  sysinfo_cellular_write                             **/
+/** Purpose:        原子写入 /var/run/netmgr/cellular.json             **/
+/** Return:         0 成功；-1 失败                                    **/
+/*************************************************************************/
+int sysinfo_cellular_write(const char *imei, const char *iccid,
+                           const char *oper, int sim, int creg,
+                           int csq, int rsrp)
+{
+    char tmp[128];
+    char e_imei[48];
+    char e_iccid[64];
+    char e_oper[96];
+    char ts[32];
+    FILE *fp;
+    time_t now;
+    struct tm tmv;
+
+    (void)mkdir(NM4_STATUS_DIR, 0755);
+
+    now = time(NULL);
+    localtime_r(&now, &tmv);
+    (void)strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S", &tmv);
+
+    json_escape_str(e_imei, sizeof(e_imei), imei ? imei : "");
+    json_escape_str(e_iccid, sizeof(e_iccid), iccid ? iccid : "");
+    json_escape_str(e_oper, sizeof(e_oper), oper ? oper : "");
+
+    (void)snprintf(tmp, sizeof(tmp), "%s.tmp", NM4_CELLULAR_JSON);
+    fp = fopen(tmp, "w");
+    if (!fp)
+        return -1;
+
+    (void)fprintf(fp,
+                  "{\n"
+                  "  \"time\": \"%s\",\n"
+                  "  \"imei\": \"%s\",\n"
+                  "  \"iccid\": \"%s\",\n"
+                  "  \"operator\": \"%s\",\n"
+                  "  \"sim\": %d,\n"
+                  "  \"creg\": %d,\n"
+                  "  \"csq\": %d,\n"
+                  "  \"rsrp\": %d\n"
+                  "}\n",
+                  ts, e_imei, e_iccid, e_oper, sim, creg, csq, rsrp);
+
+    if (fclose(fp) != 0)
+        return -1;
+    if (rename(tmp, NM4_CELLULAR_JSON) != 0)
+        return -1;
+    return 0;
 }

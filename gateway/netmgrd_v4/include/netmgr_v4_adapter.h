@@ -37,7 +37,7 @@ int nm4_adapter_wpa_start(const nm4_wpa_params_t *p);
 
 /*********************************************************************************************************
 ** Function name:       nm4_adapter_wpa_stop
-** Descriptions:        Stop udhcpc, wpa_supplicant, and ifconfig down; see src/adapter_wpa.c.
+** Descriptions:        Stop udhcpc/wpa, wait until gone, flush IPv4, ifconfig down; see src/adapter_wpa.c.
 ** input parameters:    ifname  - WiFi interface name.
 ** output parameters:   NONE
 ** Returned value:      0 after best-effort stop.

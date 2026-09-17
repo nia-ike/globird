@@ -21,4 +21,16 @@ int nm4_manager_run(const char *cfgpath, bool debug, nm4_manager_view_t view);
 
 void nm4_manager_request_arbitrate(void);
 
+/*********************************************************************************************************
+** Function name:       nm4_manager_request_apply
+** Descriptions:        Request in-process network.json apply (same as touch apply flag).
+*********************************************************************************************************/
+void nm4_manager_request_apply(void);
+
+/*********************************************************************************************************
+** Function name:       nm4_manager_apply_pending
+** Descriptions:        Return non-zero if apply request is pending.
+*********************************************************************************************************/
+int nm4_manager_apply_pending(void);
+
 #endif

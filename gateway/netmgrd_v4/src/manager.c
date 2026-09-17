@@ -11,6 +11,7 @@
 #include "netmgr_v4.h"
 #include "netmgr_v4_linkkeeper.h"
 #include "netmgr_v4_manager.h"
+#include "netmgr_v4_apply.h"
 #include "netmgr_v4_policy.h"
 #include "netmgr_v4_probe.h"
 #include "netmgr_v4_route.h"
@@ -24,6 +25,7 @@
 #include "netmgr_v4_hw_sim.h"
 #include "netmgr_v4_wifi_usb_watch.h"
 #include "netmgr_v4_reboot.h"
+#include "netmgr_v4_apply.h"
 #include "adapter_internal.h"
 
 #define NM4_PENDING_WINDOW_MS 30000ULL
@@ -39,6 +41,7 @@
 
 static volatile sig_atomic_t g_stop;
 static volatile sig_atomic_t g_arbitrate_now;
+static volatile sig_atomic_t g_apply_now;
 
 static int s_watch_had_eth_ip;
 static int s_watch_had_wifi_ip;
@@ -102,6 +105,16 @@ void nm4_manager_request_arbitrate(void)
     g_arbitrate_now = 1;
 }
 
+void nm4_manager_request_apply(void)
+{
+    g_apply_now = 1;
+}
+
+int nm4_manager_apply_pending(void)
+{
+    return g_apply_now ? 1 : 0;
+}
+
 /*********************************************************************************************************
 ** Function name:       nm4_manager_poll_arbitrate_flag
 ** Descriptions:        Check script touch file /var/run/netmgr/arbitrate and request fast loop.
@@ -114,6 +127,18 @@ static void nm4_manager_poll_arbitrate_flag(void)
     if (access(NM4_ARBITRATE_FLAG, F_OK) == 0) {
         (void)unlink(NM4_ARBITRATE_FLAG);
         g_arbitrate_now = 1;
+    }
+}
+
+/*********************************************************************************************************
+** Function name:       nm4_manager_poll_apply_flag
+** Descriptions:        Check touch file /var/run/netmgr/apply (same pattern as arbitrate).
+*********************************************************************************************************/
+static void nm4_manager_poll_apply_flag(void)
+{
+    if (access(NM4_APPLY_FLAG, F_OK) == 0) {
+        (void)unlink(NM4_APPLY_FLAG);
+        g_apply_now = 1;
     }
 }
 
@@ -569,7 +594,7 @@ static void nm4_manager_wait_steady(bool debug, int table_refresh, nm4_linkkeepe
     int elapsed = 0;
 
     while (elapsed < NM4_TICK_MS) {
-        if (g_arbitrate_now)
+        if (g_stop || g_arbitrate_now || g_apply_now)
             break;
         if (nm4_watch_fast_events(debug, table_refresh, lk)) {
             manager_fast_link_tick(now_ms(), debug, table_refresh);
@@ -581,6 +606,7 @@ static void nm4_manager_wait_steady(bool debug, int table_refresh, nm4_linkkeepe
             table_live_refresh(now_ms());
         usleep((useconds_t)NM4_WAIT_SLICE_MS * 1000U);
         nm4_manager_poll_arbitrate_flag();
+        nm4_manager_poll_apply_flag();
         elapsed += NM4_WAIT_SLICE_MS;
     }
     g_arbitrate_now = 0;
@@ -1095,12 +1121,23 @@ int nm4_manager_run(const char *cfgpath, bool debug, nm4_manager_view_t view)
         printf("\033[2J\033[H");
         (void)fflush(stdout);
     }
-    netmgr_v4_log("manager: start cfg=%s prior=eth0>wlan0>ppp0", cfgpath);
+    netmgr_v4_log("manager: start cfg=%s prior=eth0>wlan0>ppp0 (touch %s=apply)",
+                  cfgpath, NM4_APPLY_FLAG);
     while (!g_stop) {
         int fast = g_arbitrate_now ? 1 : 0;
         int changed, mismatch, need_apply, rc;
         int ppp_eff;
         t = now_ms();
+
+        nm4_manager_poll_apply_flag();
+        if (g_apply_now) {
+            g_apply_now = 0;
+            netmgr_v4_log("manager: apply flag begin");
+            event_push(&events, t, "config apply");
+            (void)nm4_config_apply_runtime(cfgpath, &lk);
+            fast = 1;
+            t = now_ms();
+        }
 
         nm4_manager_poll_arbitrate_flag();
         (void)nm4_config_write_eth_runtime_cache(cfgpath);

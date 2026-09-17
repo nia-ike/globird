@@ -12,6 +12,10 @@
 #include "adapter_internal.h"
 
 #define NM4_UDHCPC_SCRIPT "/ech/script/udhcpc.netmgrd"
+#define NM4_WPA_CTRL_DIR  "/var/run/wpa_supplicant"
+#define NM4_WPA_STOP_WAIT_MS     1500
+#define NM4_WPA_STOP_SLICE_MS    50
+#define NM4_UDHCPC_RELEASE_MS    300
 
 static char s_applied_ssid[64];
 static char s_applied_psk[64];
@@ -96,7 +100,7 @@ static void nm4_fputc_escaped(FILE *fp, const char *s)
 
 /*********************************************************************************************************
 ** Function name:       nm4_write_wpa_psk_conf
-** Descriptions:        Write a minimal wpa_supplicant network block with plaintext PSK to path.
+** Descriptions:        Write a minimal wpa_supplicant conf (ctrl_interface + network/PSK) to path.
 ** input parameters:    path    - output file path.
 **                      ssid    - WiFi SSID.
 **                      psk     - WiFi pre-shared key (ASCII).
@@ -110,6 +114,8 @@ static int nm4_write_wpa_psk_conf(const char *path, const char *ssid, const char
         perror("adapter_wpa: fopen conf");
         return -1;
     }
+    /* ctrl_interface 必须写上，否则 wpa_cli / 外部工具连不上（ctrl_ifname=nil） */
+    (void)fprintf(fp, "ctrl_interface=%s\nupdate_config=1\n\n", NM4_WPA_CTRL_DIR);
     (void)fprintf(fp, "network={\n\tssid=\"");
     nm4_fputc_escaped(fp, ssid);
     (void)fprintf(fp, "\"\n\tpsk=\"");
@@ -151,6 +157,73 @@ static int nm4_if_is_up(const char *ifname)
 }
 
 /*********************************************************************************************************
+** Function name:       wpa_wait_pidfile_gone
+** Descriptions:        Poll until pidfile process is dead or timeout.
+** input parameters:    pidf       - pidfile path.
+**                      timeout_ms - maximum wait.
+** output parameters:   NONE
+** Returned value:      1 if gone, 0 if still alive after timeout.
+*********************************************************************************************************/
+static int wpa_wait_pidfile_gone(const char *pidf, unsigned timeout_ms)
+{
+    unsigned waited = 0;
+
+    if (!pidf || !pidf[0])
+        return 1;
+    while (waited < timeout_ms) {
+        if (!nm4_pidfile_alive(pidf))
+            return 1;
+        usleep(NM4_WPA_STOP_SLICE_MS * 1000U);
+        waited += NM4_WPA_STOP_SLICE_MS;
+    }
+    return nm4_pidfile_alive(pidf) ? 0 : 1;
+}
+
+/*********************************************************************************************************
+** Function name:       wpa_kill_pidfile
+** Descriptions:        SIGTERM pidfile process, wait, then SIGKILL if still alive.
+** input parameters:    pidf - pidfile path.
+** output parameters:   NONE
+** Returned value:      NONE
+*********************************************************************************************************/
+static void wpa_kill_pidfile(const char *pidf)
+{
+    char cmd[256];
+
+    if (!pidf || !pidf[0] || !nm4_pidfile_alive(pidf))
+        return;
+
+    (void)snprintf(cmd, sizeof(cmd), "kill $(cat %s 2>/dev/null) 2>/dev/null", pidf);
+    (void)nm4_run_cmd(cmd);
+    if (wpa_wait_pidfile_gone(pidf, NM4_WPA_STOP_WAIT_MS))
+        return;
+    (void)snprintf(cmd, sizeof(cmd), "kill -9 $(cat %s 2>/dev/null) 2>/dev/null", pidf);
+    (void)nm4_run_cmd(cmd);
+    (void)wpa_wait_pidfile_gone(pidf, NM4_WPA_STOP_WAIT_MS);
+}
+
+/*********************************************************************************************************
+** Function name:       wpa_flush_ipv4
+** Descriptions:        Drop leftover IPv4 and netmgr gw/dns cache for ifname.
+** input parameters:    ifname - WiFi interface name.
+** output parameters:   NONE
+** Returned value:      NONE
+*********************************************************************************************************/
+static void wpa_flush_ipv4(const char *ifname)
+{
+    char cmd[256];
+
+    if (!ifname || !ifname[0])
+        return;
+    (void)snprintf(cmd, sizeof(cmd), "ip addr flush dev %s 2>/dev/null", ifname);
+    (void)nm4_run_cmd(cmd);
+    (void)snprintf(cmd, sizeof(cmd),
+                   "rm -f /var/run/netmgr/gateway.%s /var/run/netmgr/dns.%s 2>/dev/null",
+                   ifname, ifname);
+    (void)nm4_run_cmd(cmd);
+}
+
+/*********************************************************************************************************
 ** Function name:       nm4_adapter_wpa_start
 ** Descriptions:        Idempotent WiFi STA start: bring iface up, start wpa_supplicant and udhcpc if needed.
 ** input parameters:    p       - WPA params (ifname, wpa_conf or ssid/psk).
@@ -188,26 +261,40 @@ int nm4_adapter_wpa_start(const nm4_wpa_params_t *p)
         wpa_clear_applied();
         wpa_ok = 0;
         u_ok = 0;
+        /* stop 会 ifconfig down；拉起后再启 wpa/udhcpc */
+        snprintf(cmd, sizeof(cmd), "ifconfig %s up 2>/dev/null", p->ifname);
+        (void)nm4_run_cmd(cmd);
     }
 
-    if (!wpa_ok)
+    if (!wpa_ok) {
+        (void)wpa_wait_pidfile_gone(wpa_pidf, NM4_WPA_STOP_WAIT_MS);
         (void)unlink(wpa_pidf);
-    if (!u_ok)
+    }
+    if (!u_ok) {
+        (void)wpa_wait_pidfile_gone(dhc_pidf, NM4_WPA_STOP_WAIT_MS);
         (void)unlink(dhc_pidf);
+        /* 旧地址残留会被其它软件当成已联网，也会让下次看起来像“没 DHCP” */
+        if (nm4_if_has_ipv4(p->ifname))
+            wpa_flush_ipv4(p->ifname);
+    }
 
     if (!wpa_ok) {
+        /* 确保 ctrl socket 目录存在；-C 覆盖外部 conf 里缺失的 ctrl_interface */
+        snprintf(cmd, sizeof(cmd), "mkdir -p %s", NM4_WPA_CTRL_DIR);
+        (void)nm4_run_cmd(cmd);
+
         if (p->wpa_conf[0]) {
             snprintf(cmd, sizeof(cmd),
-                     "wpa_supplicant -i %s -c %s -B -P %s",
-                     p->ifname, p->wpa_conf, wpa_pidf);
+                     "wpa_supplicant -i %s -c %s -C %s -B -P %s",
+                     p->ifname, p->wpa_conf, NM4_WPA_CTRL_DIR, wpa_pidf);
         } else if (p->ssid[0] && p->psk[0]) {
             char confpath[NM4_PATH_MAX];
             snprintf(confpath, sizeof(confpath), "/tmp/wpa_%s.conf", p->ifname);
             if (nm4_write_wpa_psk_conf(confpath, p->ssid, p->psk) != 0)
                 return -1;
             snprintf(cmd, sizeof(cmd),
-                     "wpa_supplicant -i %s -c %s -B -P %s",
-                     p->ifname, confpath, wpa_pidf);
+                     "wpa_supplicant -i %s -c %s -C %s -B -P %s",
+                     p->ifname, confpath, NM4_WPA_CTRL_DIR, wpa_pidf);
         } else {
             fprintf(stderr,
                     "adapter_wpa: need -f wpa.conf or -s/-k ssid/psk\n");
@@ -238,7 +325,7 @@ int nm4_adapter_wpa_start(const nm4_wpa_params_t *p)
 
 /*********************************************************************************************************
 ** Function name:       nm4_adapter_wpa_stop
-** Descriptions:        Stop udhcpc and wpa_supplicant for the interface and bring interface down.
+** Descriptions:        Release DHCP, stop udhcpc/wpa, wait until gone, flush IPv4, then ifconfig down.
 ** input parameters:    ifname  - WiFi interface name.
 ** output parameters:   NONE
 ** Returned value:      Always 0 after best-effort kill commands.
@@ -246,21 +333,31 @@ int nm4_adapter_wpa_start(const nm4_wpa_params_t *p)
 int nm4_adapter_wpa_stop(const char *ifname)
 {
     char cmd[256];
+    char wpa_pidf[160];
+    char dhc_pidf[160];
 
     if (!ifname || !ifname[0]) {
         fprintf(stderr, "adapter_wpa: missing ifname\n");
         return -1;
     }
 
-    snprintf(cmd, sizeof(cmd),
-             "kill $(cat /var/run/udhcpc.%s.pid 2>/dev/null) 2>/dev/null",
-             ifname);
-    (void)nm4_run_cmd(cmd);
+    snprintf(wpa_pidf, sizeof(wpa_pidf), "/var/run/wpa_%s.pid", ifname);
+    snprintf(dhc_pidf, sizeof(dhc_pidf), "/var/run/udhcpc.%s.pid", ifname);
 
-    snprintf(cmd, sizeof(cmd),
-             "kill $(cat /var/run/wpa_%s.pid 2>/dev/null) 2>/dev/null",
-             ifname);
-    (void)nm4_run_cmd(cmd);
+    /* SIGUSR2：busybox udhcpc 释放租约并走 deconfig，避免只杀进程留下地址 */
+    if (nm4_pidfile_alive(dhc_pidf)) {
+        snprintf(cmd, sizeof(cmd),
+                 "kill -USR2 $(cat %s 2>/dev/null) 2>/dev/null", dhc_pidf);
+        (void)nm4_run_cmd(cmd);
+        usleep(NM4_UDHCPC_RELEASE_MS * 1000U);
+    }
+
+    wpa_kill_pidfile(dhc_pidf);
+    wpa_kill_pidfile(wpa_pidf);
+    (void)unlink(dhc_pidf);
+    (void)unlink(wpa_pidf);
+
+    wpa_flush_ipv4(ifname);
 
     snprintf(cmd, sizeof(cmd), "ifconfig %s down 2>/dev/null", ifname);
     (void)nm4_run_cmd(cmd);

@@ -1010,9 +1010,9 @@ enum
 #define  RN7302_CMD_WREN2                0xE500       		
 #define  RN7302_CMD_WRDIS2               0xDC00       		
 #define  RN7302_REG_EMMCFG2_DEFAULT      0x04   			
-#define  RN7302_REG_EMMCFG2_HW           0x08 
-#define  RN7302_REG_EMUCFG3_HWEN         0x000001     			
-#define  RN7302_REG_EMUCFG3_FREQ         0x200010   		
+#define  RN7302_REG_EMMCFG2_HW           0xE0000008     /* 配置基波/全波有功、无功的SPL复用半波数据 */
+#define  RN7302_REG_EMUCFG3_HWEN         0x000001
+#define  RN7302_REG_EMUCFG3_FREQ         0x200010       /* 配置夹角寄存器为1周波更新（约20ms） */
 
 //----------------------------------
 #define  RN7302_READ_REG(a)             a

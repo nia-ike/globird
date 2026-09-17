@@ -39,6 +39,7 @@ SRCS = $(SRC_DIR)/main.c \
        $(SRC_DIR)/log.c \
        $(SRC_DIR)/config_v3json.c \
        $(SRC_DIR)/config_networkjson.c \
+       $(SRC_DIR)/config_apply.c \
        $(SRC_DIR)/cJSON.c \
        $(SRC_DIR)/gateway.c \
        $(SRC_DIR)/probe.c \

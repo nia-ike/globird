@@ -15,6 +15,7 @@
 #include "netmgr_v4_gateway.h"
 #include "netmgr_v4_linkkeeper.h"
 #include "netmgr_v4_manager.h"
+#include "netmgr_v4_apply.h"
 #include "netmgr_v4_policy.h"
 #include "netmgr_v4_probe.h"
 #include "netmgr_v4_route.h"
@@ -194,6 +195,7 @@ static void usage(const char *p)
         "Module tests:\n"
         "  -N, --net-probe        探测模块：存在/链路/IPv4/ICMP（可配 -i）\n"
         "  -M, --managed          方案B守护：LinkKeeper + R策略 + RouteApply\n"
+        "      --apply            通知已运行的 -M 守护：touch /var/run/netmgr/apply 原地重读 network.json（不换 PID）\n"
         "      --managed-view MODE  managed 显示模式(log|table)\n"
         "      --policy-bits XYZ  policy 测试：X/Y/Z=eth/wlan/ppp(0/1)\n"
         "      --route-get        route 测试：读取当前默认出口(have)\n"
@@ -238,6 +240,7 @@ int main(int argc, char *argv[])
         { "dial",      required_argument, NULL, 'T' },
         { "net-probe", no_argument,       NULL, 'N' },
         { "managed",   no_argument,       NULL, 'M' },
+        { "apply",     no_argument,       NULL, 1012 },
         { "managed-view", required_argument, NULL, 1009 },
         { "policy-bits", required_argument, NULL, 1001 },
         { "route-get",   no_argument,       NULL, 1002 },
@@ -254,7 +257,7 @@ int main(int argc, char *argv[])
 
     int c;
     bool debug = false;
-    int do_w = 0, do_W = 0, do_p = 0, do_P = 0, do_N = 0, do_M = 0;
+    int do_w = 0, do_W = 0, do_p = 0, do_P = 0, do_N = 0, do_M = 0, do_apply = 0;
     int do_policy_bits = 0, do_route_get = 0, do_route_apply = 0, do_linkkeeper_once = 0, do_gateway = 0;
     int do_linkkeeper_run = 0;
     int have_s = 0, have_k = 0, have_f = 0, have_i = 0;
@@ -331,6 +334,9 @@ int main(int argc, char *argv[])
             break;
         case 'N': do_N = 1; break;
         case 'M': do_M = 1; break;
+        case 1012:
+            do_apply = 1;
+            break;
         case 1001:
             do_policy_bits = 1;
             snprintf(bitsbuf, sizeof(bitsbuf), "%s", optarg);
@@ -379,9 +385,10 @@ int main(int argc, char *argv[])
                    (do_P ? 1 : 0) + (do_N ? 1 : 0) + (do_M ? 1 : 0) +
                    (do_policy_bits ? 1 : 0) + (do_route_get ? 1 : 0) +
                    (do_route_apply ? 1 : 0) + (do_linkkeeper_once ? 1 : 0) +
-                   (do_gateway ? 1 : 0) + (do_linkkeeper_run ? 1 : 0);
+                   (do_gateway ? 1 : 0) + (do_linkkeeper_run ? 1 : 0) +
+                   (do_apply ? 1 : 0);
         if (nact > 1) {
-            fprintf(stderr, "only one action at a time (-w/-W/-p/-P/-N/-M/--policy-bits/--route-get/--route-apply/--linkkeeper-once/--linkkeeper-run/--gateway)\n");
+            fprintf(stderr, "only one action at a time (-w/-W/-p/-P/-N/-M/--apply/--policy-bits/--route-get/--route-apply/--linkkeeper-once/--linkkeeper-run/--gateway)\n");
             return 1;
         }
 
@@ -389,6 +396,12 @@ int main(int argc, char *argv[])
             int rc;
             netmgr_v4_log_init(debug);
             nm4_linkkeeper_set_intervals(lk_wifi_ms, lk_ppp_ms);
+
+            if (do_apply) {
+                printf("[netmgrd_v4] action: apply (touch %s)\n", NM4_APPLY_FLAG);
+                (void)fflush(stdout);
+                return nm4_apply_client(0);
+            }
 
             if (do_w) {
                 int manual = (have_f || (have_s && have_k)) ? 1 : 0;

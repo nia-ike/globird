@@ -214,12 +214,14 @@ void *msr_thread_proc(struct measure_ctx *pctx)
             refreshNum = refreshNum == 0 ? 1 : refreshNum;     //  halfwave = 10ms,  so HZ = 100
             hw++;
 
-            db_measure_info_halfwave_start(pMeasure);
+            if ((hw % HALFWAVE_NUM) == 1)
+            {
+                db_measure_info_halfwave_start(pMeasure);
+            }
             rms_algorithm_halfwave(pMeasure, pMeasureHalf, hw);
             if ((hw % HALFWAVE_NUM) == 0)
             {
                 db_measure_info_halfwave_done(pMeasure);
-                db_measure_info_halfwave_update_utc(pMeasure);
             }
 
             if((hw % refreshNum) == 0)
@@ -231,7 +233,6 @@ void *msr_thread_proc(struct measure_ctx *pctx)
                     rms_algorithm_Rn7302(pctx);
                     rms_algorithm_Primary_to_secondary(pMeasure,pRealtimeSecondary,pt,ct);
                     db_measure_info_full_cycle_done(pMeasure);
-                    db_measure_info_full_cycle_update_utc(pMeasure);
                     pMeasurePrimary->DemoFlag = 1;
                 }
                 else

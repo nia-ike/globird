@@ -167,8 +167,8 @@ int mb_file_pkg_upgrade(struct mb_update_ctx_t *pNewCtx)
         /* verity */
         db_msg_event_cmd(DB_EVENT_TYPE_SAVE_ALL);
         sleep(2);
-        /* upgrade */
-        system("opkg install /tmp/update.ipk --force-reinstall &");
+        /* persist to /userdata/ota then opkg (power-loss safe); background like before */
+        system("/ech/script/ota_ipk.sh install /tmp/update.ipk &");
         return 0;
     }
 

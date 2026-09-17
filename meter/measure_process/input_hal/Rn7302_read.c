@@ -142,25 +142,20 @@ struct rn7302_emu * get_EmuHalf(void)
     EmuHalf.IB = value[4];
     EmuHalf.IC = value[5];
 
-    if (ICHSEL_ON == get_ICHSEL_flag())
-    {
-        MeterChipReadReg(RN7302_REG_YUA, RN7302_LEN_YUA,    (int32_t*)&EmuHalf.YUA  );       //YUA
-        MeterChipReadReg(RN7302_REG_YUB, RN7302_LEN_YUB,    (int32_t*)&EmuHalf.YUB  );       //YUB
-        MeterChipReadReg(RN7302_REG_YUC, RN7302_LEN_YUC,    (int32_t*)&EmuHalf.YUC  );       //YUC
-        MeterChipReadReg(RN7302_REG_YIA, RN7302_LEN_YIA,    (int32_t*)&EmuHalf.YIA  );       //YIA
-        MeterChipReadReg(RN7302_REG_YIB, RN7302_LEN_YIB,    (int32_t*)&EmuHalf.YIB  );       //YIB
-        MeterChipReadReg(RN7302_REG_YIC, RN7302_LEN_YIC,    (int32_t*)&EmuHalf.YIC  );       //YIC
-    }
-    else
-    {
-        MeterChipReadArea(RN7302_REG_SPL_PA, sizeof(value), value);
-        EmuHalf.PA = value[0];
-        EmuHalf.PB = value[1];
-        EmuHalf.PC = value[2];
-        EmuHalf.QA = value[3];
-        EmuHalf.QB = value[4];
-        EmuHalf.QC = value[5];
-    }
+    MeterChipReadArea(RN7302_REG_SPL_PA, sizeof(value), value);
+    EmuHalf.PA = value[0];
+    EmuHalf.PB = value[1];
+    EmuHalf.PC = value[2];
+    EmuHalf.QA = value[3];
+    EmuHalf.QB = value[4];
+    EmuHalf.QC = value[5];
+
+    MeterChipReadReg(RN7302_REG_YUA, RN7302_LEN_YUA,    (int32_t*)&EmuHalf.YUA  );       //YUA
+    MeterChipReadReg(RN7302_REG_YUB, RN7302_LEN_YUB,    (int32_t*)&EmuHalf.YUB  );       //YUB
+    MeterChipReadReg(RN7302_REG_YUC, RN7302_LEN_YUC,    (int32_t*)&EmuHalf.YUC  );       //YUC
+    MeterChipReadReg(RN7302_REG_YIA, RN7302_LEN_YIA,    (int32_t*)&EmuHalf.YIA  );       //YIA
+    MeterChipReadReg(RN7302_REG_YIB, RN7302_LEN_YIB,    (int32_t*)&EmuHalf.YIB  );       //YIB
+    MeterChipReadReg(RN7302_REG_YIC, RN7302_LEN_YIC,    (int32_t*)&EmuHalf.YIC  );       //YIC
 
     MeterChipReadReg(RN7302_REG_UFREQ, RN7302_LEN_UFREQ,   (int32_t*)&EmuHalf.UFreq );  
          

@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define NETMGR_V4_VERSION "0.5.0-managed-policy-b"
+#define NETMGR_V4_VERSION "0.5.2-apply-touch"
 
 /*********************************************************************************************************
 ** Function name:       netmgr_v4_log_init
