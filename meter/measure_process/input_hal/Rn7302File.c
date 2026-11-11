@@ -230,16 +230,31 @@ int MeterChipWriteReg(uint32_t reg, uint32_t nbyte, uint32_t val)
 int32_t MeterChipReadArea(uint32_t reg, uint32_t nbyte, uint32_t *pval)
 {
 	int ret;
-	
+	int saved_errno;
+
     /* only support burst read 8 regs, 4bytes every reg */
-    if(nbyte != 32)
+    if(nbyte != 32) {
+        printf("[HW] MeterChipReadArea invalid nbyte=%u reg=0x%X\n", nbyte, reg);
+        errno = EINVAL;
         return -1;
+    }
     /**/
     lseek(misc_fd, reg, SEEK_SET);
     ret = read(misc_fd, pval, 8); // 驱动为读8个寄存器。这里是适配驱动要求的8，实际上驱动会按32操作。暂时不统一起来
-	if(ret < 0)
+    saved_errno = errno;
+	if(ret < 0) {
+        printf("[HW] MeterChipReadArea fail reg=0x%X ret=%d errno=%d(%s)\n",
+               reg, ret, saved_errno, strerror(saved_errno));
+        errno = saved_errno; /* printf 可能改写 errno，恢复驱动原始错误 */
 		return -1;
-	
+    }
+    if (ret != 32) {
+        printf("[HW] MeterChipReadArea unexpected ret=%d (expect 32) reg=0x%X errno=%d(%s)\n",
+               ret, reg, saved_errno, strerror(saved_errno));
+        errno = (saved_errno != 0) ? saved_errno : EIO;
+        return -1;
+    }
+
 	return ret;
 }
 

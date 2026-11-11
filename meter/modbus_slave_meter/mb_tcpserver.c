@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2013,珠海派诺电子有限公司
+* Copyright (c) 
 * All rights reserved.
 *
 * 文件名称：
@@ -18,6 +18,7 @@
 
 #include <sys/time.h>
 #include <signal.h>
+#include <errno.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
@@ -46,7 +47,14 @@
 
 
 
-#define TCPSERVER_LINK_NUM              8
+#define TCPSERVER_LINK_NUM              16
+
+/*
+    单条客户端连接异常、或本轮只有 accept 没有应用数据时，read 返回本值。
+    必须 >0 且 < MB_COM_PACKET_MIN_LEN：主循环把 <=0 当成服务端故障，
+    会 disconnect + sleep(1) + connect，这一秒内无人 accept，监听队列会被打满。
+*/
+#define MB_TCPSERVER_NO_DATA            1
 
 struct tcpserver_fdlist 
 {
@@ -83,7 +91,7 @@ static int mb_tcpserver_comset(struct mb_comm_ctx_t *pCtx)
 *********************************************************************************************************/
 static __inline__ struct tcpserver_fdlist *mb_tcpserver_fdlist_head(void)
 {
-    static struct tcpserver_fdlist fd_head;
+    static struct tcpserver_fdlist fd_head = {-1, {NULL}};
 
     return &fd_head;
 }
@@ -97,15 +105,24 @@ static __inline__ struct tcpserver_fdlist *mb_tcpserver_fdlist_head(void)
 *********************************************************************************************************/
 static __inline__ struct tcpserver_fdlist *mb_tcpserver_fdlist_pool(void)
 {
-    static struct tcpserver_fdlist fd_list[TCPSERVER_LINK_NUM] = {
-        {-1, NULL},
-        {-1, NULL},
-        {-1, NULL},
-        {-1, NULL},
-        {-1, NULL},
-        {-1, NULL},
-        {-1, NULL},
-        {-1, NULL},
+    static struct tcpserver_fdlist fd_list[TCPSERVER_LINK_NUM] = 
+    {
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}},
+        {-1, {NULL}}
     };
 
     return &fd_list[0];
@@ -171,7 +188,6 @@ static int mb_tcpserver_fdlist_fdset(fd_set *rd)
     struct tcpserver_fdlist *pfd_head, *pfd;
 
     pfd_head = mb_tcpserver_fdlist_head();
-
     slist_for_each_entry(pfd, &pfd_head->list, list)
     {
         if(pfd->fd != -1)
@@ -338,9 +354,9 @@ static int mb_tcpserver_connect(struct mb_comm_ctx_t *pCtx)
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     /* 绑定 */
     rc = bind(pCtx->fd, (const struct sockaddr *)&addr, sizeof(addr));
-    /* 监听 */
-    listen(pCtx->fd, 3);
-   
+    /* 监听，backlog 加大避免多客户端同时连入时卡顿/连接失败 */
+    listen(pCtx->fd, 64);
+
     return 0;
 }
 
@@ -366,6 +382,7 @@ static void mb_tcpserver_disconnect(struct mb_comm_ctx_t *pCtx)
             fd_active_cnt++;
         }
     }
+
     /* 全部关闭 */
     if(fd_active_cnt == 0)
     {
@@ -403,7 +420,7 @@ static int mb_tcpserver_fdmax_update(struct mb_comm_ctx_t *pCtx)
     }    
 
     /* socket fd 加入max */
-    fd_max = (fd_max < pCtx->fd) ? pfd->fd : fd_max;
+    fd_max = (fd_max < pCtx->fd) ? pCtx->fd : fd_max;
     pCtx->fd_max = fd_max;
 
     return fd_max;
@@ -420,7 +437,8 @@ static int mb_tcpserver_fdmax_update(struct mb_comm_ctx_t *pCtx)
 static int mb_tcpserver_read(struct mb_comm_ctx_t *pCtx, uint8_t *pbuf, uint16_t bytes, int timeout)
 {
     int rc;
-    int fd_listen = -1;;
+    int fd_listen = -1;
+    int opt_flags;
     fd_set rd;
     struct timeval tv ;
     int32_t iRead = 0;
@@ -440,7 +458,6 @@ static int mb_tcpserver_read(struct mb_comm_ctx_t *pCtx, uint8_t *pbuf, uint16_t
     /* 监听所有连接 */
     mb_tcpserver_fdlist_fdset(&rd);
     rc = select(pCtx->fd_max+1, &rd, NULL, NULL, &tv);
-    
     if(rc < 0)
     {
         /* 关闭所有连接 */
@@ -455,13 +472,33 @@ static int mb_tcpserver_read(struct mb_comm_ctx_t *pCtx, uint8_t *pbuf, uint16_t
     }
     else if(rc > 0)
     {
-        // accept。 新连接请求
+        /* 一次把监听队列取空，否则积压的连接要等到下一轮才被取走 */
         if(FD_ISSET(pCtx->fd, &rd))
         {
-            fd_listen = accept(pCtx->fd, (struct sockaddr *)&client_sockaddr, &client_addr_len);
-            if(fd_listen >= 0)
+            for(;;)
             {
-                
+                int32_t option = 1;
+
+                client_addr_len = sizeof(client_sockaddr);
+                fd_listen = accept(pCtx->fd, (struct sockaddr *)&client_sockaddr, &client_addr_len);
+                if(fd_listen < 0)
+                {
+                    if((errno == EINTR) || (errno == ECONNABORTED))
+                        continue;
+                    break;
+                }
+
+                /* 客户端 fd 设为非阻塞，避免 recv/send 意外阻塞 */
+                opt_flags = fcntl(fd_listen, F_GETFL, 0);
+                if(opt_flags >= 0)
+                    fcntl(fd_listen, F_SETFL, opt_flags | O_NONBLOCK);
+
+                /* 远端异常断开时内核可探测并回收失效连接，避免占满 TCPSERVER_LINK_NUM */
+                setsockopt(fd_listen, SOL_SOCKET, SO_KEEPALIVE, (void *)&option, sizeof(option));
+                setsockopt(fd_listen, IPPROTO_TCP, TCP_KEEPIDLE, (void *)&pCtx->keepidle, sizeof(pCtx->keepidle));
+                setsockopt(fd_listen, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&pCtx->keepintvl, sizeof(pCtx->keepintvl));
+                setsockopt(fd_listen, IPPROTO_TCP, TCP_KEEPCNT, (void *)&pCtx->keepcnt, sizeof(pCtx->keepcnt));
+
                 /* 插入新连接 */
                 rc = mb_tcpserver_fdlist_push(fd_listen);
                 if(rc < 0)
@@ -470,21 +507,20 @@ static int mb_tcpserver_read(struct mb_comm_ctx_t *pCtx, uint8_t *pbuf, uint16_t
                     rc = mb_tcpserver_fdlist_remove_oldest();
                     if(rc != -1)
                         close(rc);
-                    
                     /* 插入新连接 */
                     rc = mb_tcpserver_fdlist_push(fd_listen);
                 }
-
                 pCtx->fd_listen = fd_listen;
                 mb_tcpserver_fdmax_update(pCtx);
-                iRead = 1;
+                iRead = MB_TCPSERVER_NO_DATA;
             }
         }
-        else 
+
+        /* accept 与收包在同一轮内都要处理，两者不能互斥 */
         {
             struct tcpserver_fdlist *pfd_head, *pfd;
             /*
-                遍历找到第一个有报文链接，读取该链接后退出函数！！！！。
+                遍历找到第一个有报文链接，读取该链接后退出函数。
                 不在遍历时读取所有链接，是因为本程序架构是 读写模块分离接口提供给外面调用。因此这里只管读取， 不涉及协议解析和写。
 
                 但由于tcpip协议栈会缓存链接数据，因此在下个循环read时，会读第2个链接报文数据，因此不会导致数据丢失
@@ -496,19 +532,34 @@ static int mb_tcpserver_read(struct mb_comm_ctx_t *pCtx, uint8_t *pbuf, uint16_t
                 {
                     if(FD_ISSET(pfd->fd, &rd))
                     {
-                        
+                        int current_fd = pfd->fd;
+
                         iRead = recv(pfd->fd, pbuf, bytes, 0);
-                        if(iRead <= 0)
+                        if(iRead < 0)
+                        {
+                            if((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
+                            {
+                                iRead = MB_TCPSERVER_NO_DATA;
+                                continue;
+                            }
+
+                            close(pfd->fd);
+                            mb_tcpserver_fdlist_remove(pfd->fd);
+                            mb_tcpserver_fdmax_update(pCtx);
+                            pfd->fd = -1;
+                            return MB_TCPSERVER_NO_DATA;
+                        }
+                        else if(iRead == 0)
                         {
                             close(pfd->fd);
                             mb_tcpserver_fdlist_remove(pfd->fd);
                             mb_tcpserver_fdmax_update(pCtx);
                             pfd->fd = -1;
-                            return -1;
+                            return MB_TCPSERVER_NO_DATA;
                         }
 
                         /* 保存 当前处理的链接。用于本次问答处理（write）的socket */
-                        pCtx->fd_listen = pfd->fd;
+                        pCtx->fd_listen = current_fd;
                         MB_PACKET_DUMP(pCtx, "RX:", pbuf, iRead);
                         return iRead;
                     }
@@ -531,23 +582,27 @@ static int mb_tcpserver_read(struct mb_comm_ctx_t *pCtx, uint8_t *pbuf, uint16_t
 static int mb_tcpserver_write(struct mb_comm_ctx_t *pCtx, uint8_t *pbuf, uint16_t bytes)
 {
     int rc;
-    int nwrite = -1;
+    int nwrite;
+    uint32_t total_write = 0;
     fd_set wr;
     struct timeval tv ;
 
     if(-1 == pCtx->fd)
         return -1;
 
-    FD_ZERO(&wr);
-    FD_SET(pCtx->fd_listen, &wr);
+    if(-1 == pCtx->fd_listen)
+        return -1;
 
-    tv.tv_sec   = 5;
-    tv.tv_usec  = 0;
-    rc = select(pCtx->fd_listen+1, NULL, &wr, NULL, &tv);
-    if(rc > 0)
+    /* 连接为非阻塞，send 可能只发出一部分，必须循环发完，否则报文会被截断 */
+    while(total_write < bytes)
     {
-        nwrite = send(pCtx->fd_listen, pbuf, bytes, 0);
-        if(nwrite <= 0)
+        FD_ZERO(&wr);
+        FD_SET(pCtx->fd_listen, &wr);
+        /* 写就绪超时不宜过长，避免对端慢导致本端长时间阻塞、其它连接卡顿 */
+        tv.tv_sec   = 1;
+        tv.tv_usec  = 0;
+        rc = select(pCtx->fd_listen+1, NULL, &wr, NULL, &tv);
+        if(rc <= 0)
         {
             close(pCtx->fd_listen);
             mb_tcpserver_fdlist_remove(pCtx->fd_listen);
@@ -555,13 +610,34 @@ static int mb_tcpserver_write(struct mb_comm_ctx_t *pCtx, uint8_t *pbuf, uint16_
             pCtx->fd_listen = -1;
             return -1;
         }
+
+        nwrite = send(pCtx->fd_listen, pbuf + total_write, bytes - total_write, 0);
+        if(nwrite < 0)
+        {
+            if((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
+                continue;
+
+            close(pCtx->fd_listen);
+            mb_tcpserver_fdlist_remove(pCtx->fd_listen);
+            mb_tcpserver_fdmax_update(pCtx);
+            pCtx->fd_listen = -1;
+            return -1;
+        }
+        else if(nwrite == 0)
+        {
+            close(pCtx->fd_listen);
+            mb_tcpserver_fdlist_remove(pCtx->fd_listen);
+            mb_tcpserver_fdmax_update(pCtx);
+            pCtx->fd_listen = -1;
+            return -1;
+        }
+
+        total_write += (uint32_t)nwrite;
     }
-    else
-    {
-        return -1;
-    }
+
+    
     MB_PACKET_DUMP(pCtx, "TX:", pbuf, bytes);
-    return nwrite;
+    return (int)total_write;
 }
 
 /*********************************************************************************************************

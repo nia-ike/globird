@@ -44,5 +44,13 @@ struct if_process_thread_param_t
 int if_process_vpn_conn(struct remote_m_ctx_t *pctx, struct mqtt_msg_t *pmqtt_recieve_msg);
 int if_process_vpn_disconn(struct remote_m_ctx_t *pctx, struct mqtt_msg_t *pmqtt_recieve_msg);
 int if_process_heartbeat_start(struct remote_m_ctx_t *pctx);
+/* MQTT FUNC_TRANS: 同步写本地 ModbusTCP(8502) 并等待应答后回传 */
+int if_process_trans_request(struct remote_m_ctx_t *pctx, struct mqtt_msg_t *preq);
+/* 经 8502 读保持寄存器；成功返回字节数，失败 <0 */
+int if_process_mb_read_holding(struct remote_m_ctx_t *pctx, uint8_t unit,
+                               uint16_t reg_addr, uint16_t reg_num,
+                               uint8_t *out, uint16_t out_len);
+/* 从 remote_m.json 的 cert_path 刷新（拉起方锁定则跳过） */
+int if_process_cert_root_refresh(struct remote_m_ctx_t *pctx);
 
 #endif

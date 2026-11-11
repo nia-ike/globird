@@ -26,7 +26,7 @@
 #include <math.h>
 #include "Rn7302.h"
 #include "Rn7302File.h"
-#include "algorithm_fundwave.h"
+#include "algorithm_fullwave.h"
 #include "msr_process.h"
 #include "algorithm_linevoltage.h"
 #include "algorithm_phasevoltage.h"
@@ -50,15 +50,9 @@
 
 
 /*********************************************************************************************************
-** Function name:       rms_algorithm_fundwave
-** Descriptions:        
-                
-** input parameters:    
-                        in  -  some meter's data come from ADC, so we need input the adc data with parameter "in"
-                        object - 
-                        out -  realtime data struct
-** output parameters:   NONE
-** Returned value:      NONErms_algorithm_frequency_hw
+** Function name:       rms_algorithm_fullwave
+** Descriptions:        全波算法；电参读失败则本拍不计算且不读电能（读后清零保护）
+** Returned value:      0 成功；-1 驱动读失败
 *********************************************************************************************************/
 int32_t rms_algorithm_fullwave(struct db_database_measure_base_type *pMeasure, struct db_basic_realtime_type *out, uint32_t pt, uint32_t ct)
 {
@@ -68,17 +62,26 @@ int32_t rms_algorithm_fullwave(struct db_database_measure_base_type *pMeasure, s
     struct db_runing_energy_type             *pEngRun        = &(pMeasure->db_measure.energy.runing_hp);
     struct db_energy_multirate_type          *pEngMulti      = &(pMeasure->db_measure.energy.multirate);
     struct db_energy_multirate_type          *pEngMultiHP    = &(pMeasure->db_measure.energy.multirate_hp);
-    struct rn7302_emu                        *pEmuFullWave   = get_EmuFull();
-    struct rn7302_emu_energy                 *pEmuFullEnergy = get_EmuFullEnergy();
-    struct db_realtime_energy_type           *pNetEnergy     = get_FullNetEnergy();
+    struct rn7302_emu                        *pEmuFullWave   = NULL;
+    struct rn7302_emu_energy                 *pEmuFullEnergy = NULL;
+    struct db_realtime_energy_type           *pNetEnergy     = NULL;
     struct db_cfg_user_para                  *pCfgUser       = &(pMeasure->db_cfg.user);
     struct db_energy_realtime_translate_type *pEngRtTrans    = &(pMeasure->db_measure.energy.realtime_translate);
 
+    /* 先读电参；失败则不读电能，避免读后清零芯片丢增量 */
     if (ICHSEL_ON == get_ICHSEL_flag())
     {
-        pEmuFullWave   = get_EmuFund();  
+        if (get_EmuFund(&pEmuFullWave) != 0)
+            return -1;
         pEmuFullEnergy = get_EmuFundEnergy();
         pNetEnergy     = get_FundNetEnergy();
+    }
+    else
+    {
+        if (get_EmuFull(&pEmuFullWave) != 0)
+            return -1;
+        pEmuFullEnergy = get_EmuFullEnergy();
+        pNetEnergy     = get_FullNetEnergy();
     }
 
     /* 1. calculate the angle first */

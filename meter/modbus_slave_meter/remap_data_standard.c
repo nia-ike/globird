@@ -135,6 +135,92 @@ static int mb_cmd_adjustRst_handle_meter3(struct mb_comm_ctx_t *pCtx,  struct re
 static int mb_cmd_adjustRst_handle(struct mb_comm_ctx_t *pCtx,  struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
 
 static int mb_cmd_ota_set_url_handle(struct mb_comm_ctx_t *pCtx, struct remap_Modbus_node *pModifyConfig,  uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
+static int mb_cmd_mqtt_cert_path_handle(struct mb_comm_ctx_t *pCtx, struct remap_Modbus_node *pModifyConfig,  uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
+static uint16_t *mb_mqtt_cert_path_readhandle(struct mb_comm_ctx_t *pCtx, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
+static uint16_t *mb_factory_result_readhandle(struct mb_comm_ctx_t *pCtx, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
+static int mb_cmd_chorus_factory_handle(struct mb_comm_ctx_t *pCtx, struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
+static int mb_cmd_chorus_factory_retest_prep_handle(struct mb_comm_ctx_t *pCtx, struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value);
+
+/* MQTT 证书根路径：57200起 100 寄存器，由拉起方注入；进程内缓冲可读回 */
+static char g_mqtt_cert_url[200];
+static struct remap_Modbus_node remapMqttCertUrl[100];
+
+/* 生产测试结果：64100，0=正常，1=异常 */
+#define FACTORY_RESULT_JSON_PATH    "/userdata/chorus/factory_result.json"
+#define FACTORY_HOLD_PATH           "/userdata/chorus/hold"
+#define FACTORY_STATUS_OK           (0)
+#define FACTORY_STATUS_ABNORMAL     (1)
+static uint16_t g_factory_test_status;
+static struct remap_Modbus_node remapFactoryTestStatus[] = {
+    REG_READ_WITH_ADDR_ALIGN_U16(g_factory_test_status, REG_ORDER_LITTLE_EDIAN),
+};
+
+#define RM_CFG_FILE_PATH        "/userdata/config/project/remote_m.json"
+
+/* 从 remote_m.json 现读 cert_path 到可读缓冲（03H 读前也会调） */
+static void mqtt_cert_url_reload_from_json(void)
+{
+    FILE *fp;
+    long size;
+    char *buf = NULL;
+    cJSON *pJson = NULL;
+    cJSON *pAttr = NULL;
+    cJSON *pItem = NULL;
+
+    memset(g_mqtt_cert_url, 0, sizeof(g_mqtt_cert_url));
+
+    fp = fopen(RM_CFG_FILE_PATH, "rb");
+    if(fp == NULL)
+        return;
+    if(fseek(fp, 0, SEEK_END) != 0) {
+        fclose(fp);
+        return;
+    }
+    size = ftell(fp);
+    if(size <= 0) {
+        fclose(fp);
+        return;
+    }
+    rewind(fp);
+    buf = (char *)malloc((size_t)size + 1);
+    if(buf == NULL) {
+        fclose(fp);
+        return;
+    }
+    if(fread(buf, 1, (size_t)size, fp) != (size_t)size) {
+        free(buf);
+        fclose(fp);
+        return;
+    }
+    buf[size] = '\0';
+    fclose(fp);
+
+    pJson = cJSON_Parse(buf);
+    free(buf);
+    if(pJson == NULL)
+        return;
+    pAttr = cJSON_GetObjectItem(pJson, "attr");
+    pItem = pAttr ? cJSON_GetObjectItem(pAttr, "cert_path") : NULL;
+    if(pItem && pItem->valuestring && pItem->valuestring[0] != '\0')
+        snprintf(g_mqtt_cert_url, sizeof(g_mqtt_cert_url), "%s", pItem->valuestring);
+    cJSON_Delete(pJson);
+}
+
+static void mqtt_cert_url_remap_prepare(void)
+{
+    int i;
+
+    for(i = 0; i < 100; i++)
+    {
+        remapMqttCertUrl[i].node = (uint16_t *)(g_mqtt_cert_url + i * 2);
+        remapMqttCertUrl[i].offset = 0;
+        remapMqttCertUrl[i].origin_offset = 0;
+        remapMqttCertUrl[i].nItem = 1;
+        remapMqttCertUrl[i].order = REG_ORDER_BIG_EDIAN;
+    }
+
+    mqtt_cert_url_reload_from_json();
+}
 
 /* 
     modbus RTU 寄存器表
@@ -301,18 +387,23 @@ static const ST_REG_4XXXX_ATTR   reg_4x_section[] = {
     { NULL,                                                      59100,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_test_led_handle}, // led 测试
     { NULL,                                                      59101,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_clearE2_handle}, // 清电能
     { NULL,                                                      59102,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_historyE2_handle}, // 清电能
+    { NULL,                                                      59103,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_chorus_factory_handle}, // CHORUS出厂测试: S99supervisor factory
+    { NULL,                                                      59104,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_chorus_factory_retest_prep_handle}, // CHORUS重测准备: stop + touch hold
     { NULL,                                                      59111,      1,                                               MB_TYPE_CMD,      RW_P ,    NULL,    mb_cmd_clearMultirateE2_handle}, // 清电能
     
     // { NULL,                                                      59200,      24,                                             MB_TYPE_CMD,      RW_NP ,   NULL,    mb_write_eng_rt_handle}, // 清电能
     // { NULL,                                                      59224,      16,                                             MB_TYPE_CMD,      RW_NP ,   NULL,    mb_write_eng_multi_handle}, // 清电能
 
     { NULL,                                                      57000,      100,                                             MB_TYPE_CMD,      RW_NP ,  NULL,    mb_cmd_ota_set_url_handle }, // 写http命令升级
+    { (struct remap_Modbus_node*)&remapMqttCertUrl[0],           57200,      100,                                             MB_TYPE_LOCAL,    RW_NP ,  mb_mqtt_cert_path_readhandle,    mb_cmd_mqtt_cert_path_handle }, // MQTT证书根路径(读时现读 json)
+
     /*
         公共寄存器段
     */
 
     { (struct remap_Modbus_node*)&remapStatusInfo[0],           64000,      MB_SECTION_GET_REG_NUM(remapStatusInfo),         MB_TYPE_RAM,      RO ,     NULL,    NULL}, // device data
-    { (struct remap_Modbus_node*)&remapTestInfo[0],             64200,      MB_SECTION_GET_REG_NUM(remapTestInfo),           MB_TYPE_RAM,      RO ,     mb_productTest_info_handle,    NULL}, // device data   
+    { (struct remap_Modbus_node*)&remapFactoryTestStatus[0],    64100,      MB_SECTION_GET_REG_NUM(remapFactoryTestStatus),  MB_TYPE_LOCAL,    RO ,     mb_factory_result_readhandle,  NULL}, // 生产测试结果 0正常/1异常
+    { (struct remap_Modbus_node*)&remapTestInfo[0],             64200,      MB_SECTION_GET_REG_NUM(remapTestInfo),           MB_TYPE_RAM,      RO ,     NULL,    NULL}, // device data   
    
     { (struct remap_Modbus_node*)&remapSystemInfo[0],           64300,      MB_SECTION_GET_REG_NUM(remapSystemInfo),          MB_TYPE_LOCAL,    RW_NP ,  NULL,    mb_cmd_synctime_handle}, // 
     { (struct remap_Modbus_node*)&remapSystemTimeZone[0],       64302,      MB_SECTION_GET_REG_NUM(remapSystemTimeZone),      MB_TYPE_LOCAL,    RW_NP ,  NULL,    mb_cmd_timezone_handle}, // 
@@ -382,7 +473,10 @@ static uint16_t *mb_productTest_info_handle (struct mb_comm_ctx_t *pCtx, uint16_
 
     ret = mb_i2c_rtc_volt_get(&volt);
     if(ret != -1)
+    {
+        pCtx->pvmem->db_cfg_info.status.rtc_volt = volt;
         pCtx->pvmem->db_cfg_info.product_test.rtc = volt;
+    }
     
 
     return NULL;
@@ -1038,6 +1132,287 @@ static int mb_cmd_ota_set_url_handle(struct mb_comm_ctx_t *pCtx, struct remap_Mo
     */
     ota_http_start((char*)p_value, pCtx->pvmem, 0);
     
+    return 0;
+}
+
+/*********************************************************************************************************
+** Function name:       mb_remote_m_set_cert_path
+** Descriptions:        同步更新 remote_m.json 中的 cert_path
+** input parameters:    NONE
+** output parameters:   NONE
+** Returned value:      0成功
+*********************************************************************************************************/
+static int mb_remote_m_set_cert_path(const char *path)
+{
+    FILE *fp;
+    long size;
+    char *buf = NULL;
+    char *out = NULL;
+    cJSON *pJson = NULL;
+    cJSON *pAttr = NULL;
+    cJSON *pItem = NULL;
+    int ret = -1;
+
+    fp = fopen(RM_CFG_FILE_PATH, "rb");
+    if(fp == NULL)
+        return -1;
+
+    if(fseek(fp, 0, SEEK_END) != 0)
+        goto __end;
+    size = ftell(fp);
+    if(size <= 0)
+        goto __end;
+    rewind(fp);
+
+    buf = (char *)malloc((size_t)size + 1);
+    if(buf == NULL)
+        goto __end;
+    if(fread(buf, 1, (size_t)size, fp) != (size_t)size)
+        goto __end;
+    buf[size] = '\0';
+    fclose(fp);
+    fp = NULL;
+
+    pJson = cJSON_Parse(buf);
+    if(pJson == NULL)
+        goto __end;
+
+    pAttr = cJSON_GetObjectItem(pJson, "attr");
+    if(pAttr == NULL)
+    {
+        pAttr = cJSON_CreateObject();
+        if(pAttr == NULL)
+            goto __end;
+        cJSON_AddItemToObject(pJson, "attr", pAttr);
+    }
+
+    pItem = cJSON_GetObjectItem(pAttr, "cert_path");
+    if(pItem)
+        cJSON_ReplaceItemInObject(pAttr, "cert_path", cJSON_CreateString(path));
+    else
+        cJSON_AddStringToObject(pAttr, "cert_path", path);
+
+    out = cJSON_PrintUnformatted(pJson);
+    if(out == NULL)
+        goto __end;
+
+    fp = fopen(RM_CFG_FILE_PATH, "wb");
+    if(fp == NULL)
+        goto __end;
+    if(fwrite(out, 1, strlen(out), fp) != strlen(out))
+        goto __end;
+    ret = 0;
+
+__end:
+    if(fp)
+        fclose(fp);
+    if(out)
+        cJSON_free(out);
+    if(pJson)
+        cJSON_Delete(pJson);
+    if(buf)
+        free(buf);
+    return ret;
+}
+
+/*********************************************************************************************************
+** Function name:       mb_mqtt_cert_path_readhandle
+** Descriptions:        03H 读 57200 前回调：现读 remote_m.json 的 cert_path 到缓冲
+*********************************************************************************************************/
+static uint16_t *mb_mqtt_cert_path_readhandle(struct mb_comm_ctx_t *pCtx, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value)
+{
+    (void)pCtx;
+    (void)reg_addr;
+    (void)reg_num;
+    (void)p_value;
+    mqtt_cert_url_reload_from_json();
+    return NULL;
+}
+
+/*********************************************************************************************************
+** Function name:       factory_test_status_reload
+** Descriptions:        检查 /userdata/chorus 生产测试结果
+**                      异常：无 factory_result.json，或 result!=success，或存在 hold
+**                      正常：文件存在且 result==success 且无 hold
+*********************************************************************************************************/
+static void factory_test_status_reload(void)
+{
+    FILE *fp;
+    long size;
+    char *buf = NULL;
+    cJSON *pJson = NULL;
+    cJSON *pItem = NULL;
+    int abnormal = 0;
+
+    /* hold 存在：生产测试模式，视为异常 */
+    if (access(FACTORY_HOLD_PATH, F_OK) == 0)
+        abnormal = 1;
+
+    if (!abnormal)
+    {
+        fp = fopen(FACTORY_RESULT_JSON_PATH, "rb");
+        if (fp == NULL)
+        {
+            abnormal = 1;
+        }
+        else
+        {
+            if (fseek(fp, 0, SEEK_END) != 0)
+            {
+                abnormal = 1;
+            }
+            else
+            {
+                size = ftell(fp);
+                if (size <= 0)
+                {
+                    abnormal = 1;
+                }
+                else
+                {
+                    rewind(fp);
+                    buf = (char *)malloc((size_t)size + 1);
+                    if (buf == NULL)
+                    {
+                        abnormal = 1;
+                    }
+                    else if (fread(buf, 1, (size_t)size, fp) != (size_t)size)
+                    {
+                        abnormal = 1;
+                    }
+                    else
+                    {
+                        buf[size] = '\0';
+                        pJson = cJSON_Parse(buf);
+                        if (pJson == NULL)
+                        {
+                            abnormal = 1;
+                        }
+                        else
+                        {
+                            pItem = cJSON_GetObjectItem(pJson, "result");
+                            if (pItem == NULL || !cJSON_IsString(pItem) ||
+                                pItem->valuestring == NULL ||
+                                strcmp(pItem->valuestring, "success") != 0)
+                            {
+                                abnormal = 1;
+                            }
+                        }
+                    }
+                }
+            }
+            fclose(fp);
+        }
+    }
+
+    if (pJson)
+        cJSON_Delete(pJson);
+    if (buf)
+        free(buf);
+
+    g_factory_test_status = abnormal ? FACTORY_STATUS_ABNORMAL : FACTORY_STATUS_OK;
+}
+
+/*********************************************************************************************************
+** Function name:       mb_factory_result_readhandle
+** Descriptions:        03H 读 64100 前回调：刷新生产测试结果状态
+*********************************************************************************************************/
+static uint16_t *mb_factory_result_readhandle(struct mb_comm_ctx_t *pCtx, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value)
+{
+    (void)pCtx;
+    (void)reg_addr;
+    (void)reg_num;
+    (void)p_value;
+    factory_test_status_reload();
+    return NULL;
+}
+
+/*********************************************************************************************************
+** Function name:       mb_cmd_chorus_factory_handle
+** Descriptions:        寄存器59103：写888，后台执行 /etc/init.d/S99supervisor factory
+**                      factory 最长约60s，后台执行避免阻塞 Modbus；完成后读64100判结果
+*********************************************************************************************************/
+static int mb_cmd_chorus_factory_handle(struct mb_comm_ctx_t *pCtx, struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value)
+{
+    uint16_t value;
+
+    (void)pCtx;
+    (void)pModifyConfig;
+    (void)reg_addr;
+    (void)reg_num;
+
+    value = MB_ALIGN_PT_16BIT_READ(p_value);
+    if (value != MB_WRITE_CMD)
+        return -1;
+
+    /* 后台执行，避免 Modbus 会话被 60s 阻塞 */
+    system("/etc/init.d/S99supervisor factory &");
+    return 0;
+}
+
+/*********************************************************************************************************
+** Function name:       mb_cmd_chorus_factory_retest_prep_handle
+** Descriptions:        寄存器59104：写888，已通过设备重测准备
+**                      /etc/init.d/S99supervisor stop + touch /userdata/chorus/hold
+*********************************************************************************************************/
+static int mb_cmd_chorus_factory_retest_prep_handle(struct mb_comm_ctx_t *pCtx, struct remap_Modbus_node *pModifyConfig, uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value)
+{
+    uint16_t value;
+
+    (void)pCtx;
+    (void)pModifyConfig;
+    (void)reg_addr;
+    (void)reg_num;
+
+    value = MB_ALIGN_PT_16BIT_READ(p_value);
+    if (value != MB_WRITE_CMD)
+        return -1;
+
+    system("/etc/init.d/S99supervisor stop >/dev/null 2>&1");
+    system("mkdir -p /userdata/chorus; touch /userdata/chorus/hold");
+    return 0;
+}
+
+/*********************************************************************************************************
+** Function name:       mb_cmd_mqtt_cert_path_handle
+** Descriptions:        寄存器57200：写入 MQTT TLS 证书根目录（最多100寄存器/200字节）
+**                      根目录布局由拉起方维护：azure-ca-bundle.crt + current -> generations/<hash>/{certificate,private-key}.pem
+*********************************************************************************************************/
+static int mb_cmd_mqtt_cert_path_handle(struct mb_comm_ctx_t *pCtx, struct remap_Modbus_node *pModifyConfig,  uint16_t reg_addr, uint16_t reg_num, uint8_t *p_value)
+{
+    char path[201];
+    size_t nbytes;
+    char *p;
+
+    (void)pCtx;
+    (void)pModifyConfig;
+    (void)reg_addr;
+
+    if(p_value == NULL || reg_num == 0 || reg_num > 100)
+        return -1;
+
+    nbytes = (size_t)reg_num * 2;
+    if(nbytes >= sizeof(path))
+        nbytes = sizeof(path) - 1;
+
+    memcpy(path, p_value, nbytes);
+    path[nbytes] = '\0';
+
+    /* 去掉尾部填充的 '\0'/空白 */
+    p = path + strlen(path);
+    while(p > path && (p[-1] == ' ' || p[-1] == '\r' || p[-1] == '\n'))
+        *--p = '\0';
+
+    if(path[0] == '\0')
+        return -1;
+
+    /* 同步可读缓冲，供 03H 读回 */
+    memset(g_mqtt_cert_url, 0, sizeof(g_mqtt_cert_url));
+    snprintf(g_mqtt_cert_url, sizeof(g_mqtt_cert_url), "%s", path);
+
+    /* 只写 remote_m.json 的 cert_path */
+    mb_remote_m_set_cert_path(path);
+
     return 0;
 }
 
@@ -2036,6 +2411,9 @@ static void remap_config_init(void *vmem)
     int i, j;
     struct system_info   *tmp_systeminfo = mb_systeminfo_pointer_get();
     struct db_database_type *pstVmem = (struct db_database_type *)vmem;
+
+    /* 57200 证书 URL 缓冲需在 vmem 回填前挂好 node，避免被当成 offset=0 覆盖 */
+    mqtt_cert_url_remap_prepare();
 
     /*
         由于使用动态获取内存作为结构存取，不能在remap结构体中初始化定义 vmem地址，

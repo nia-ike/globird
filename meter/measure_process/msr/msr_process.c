@@ -102,7 +102,7 @@ int waveform_fd = -1;
 ** output parameters:   NONE
 ** Returned value:
 *********************************************************************************************************/
-static void rms_algorithm_Rn7302(struct measure_ctx *pctx)
+static int rms_algorithm_Rn7302(struct measure_ctx *pctx)
 {
     struct db_database_type                        *pstVmem = (struct db_database_type *)pctx->pdb;
     struct db_database_measure_base_type         *pMeasure = &(pstVmem->db_measurebase[pctx->chip]);
@@ -129,23 +129,40 @@ static void rms_algorithm_Rn7302(struct measure_ctx *pctx)
     {
         //rn7302_ioctl_hardware_rst(fd);
         Rn7302Init(pMeasure);
+        pstVmem->db_cfg_info.status.rn7302_status = 1;  //异常：rn7302芯片配置参数校验失败
         printf("RN7302 CHANGE!\n");
-        return;
+        return -1;
     }
-    DEBUG_PRINT(DEBUG_OFF, "%s %d\r\n", __FILE__, __LINE__);
+    else
+    {
+        pstVmem->db_cfg_info.status.rn7302_status = 0;  //正常：rn7302芯片配置参数校验成功
+    }
 
     if(1 != Rn7302_Config(pMeasure, MSR_TYPE_RN7302_GET_INIT_STATE, 0))
     {
-        return;
+        return -1;
     }
     if(pctx->test != 1)
     {
-        rms_algorithm_fullwave(        pMeasure,         pFullwave,  pt,   ct);
+        /*
+         * 全波/基波先在局部变量里算完并翻转 CT 极性，再一次性写入共享内存。
+         * 未翻转的功率不会出现在全局变量里，避免通讯读到反向跳变。
+         */
+        {
+            struct db_basic_realtime_type full_local = *pFullwave;
+            struct db_basic_realtime_type fund_local = *pFundwave;
+
+            if (rms_algorithm_fullwave(pMeasure, &full_local, pt, ct) != 0)
+                return -1;
+            if (rms_algorithm_fundwave(pMeasure, &fund_local, pt, ct) != 0)
+                return -1;
+            rms_algorithm_CurrentReverse(pMeasure, &full_local, pt, ct);
+            rms_algorithm_CurrentReverse(pMeasure, &fund_local, pt, ct);
+            *pFullwave = full_local;
+            *pFundwave = fund_local;
+        }
         rms_algorithm_Primary_to_secondary(pMeasure, pRealtimeSecondary,    pt,   ct);
-        rms_algorithm_fundwave(        pMeasure,         pFundwave,  pt,   ct);
         rms_algorithm_fundwave_secondary(pMeasure, pFunRealtimeSecondary,   pt,   ct);
-        rms_algorithm_CurrentReverse(  pMeasure,         pFullwave,  pt,   ct);
-        rms_algorithm_CurrentReverse(  pMeasure,         pFundwave,  pt,   ct);
         rms_algorithm_PowerCapOrInd(   pMeasure,         pFullwave,  pt,   ct);
         rms_algorithm_dmd_process(     pMeasure);
         rms_algorithm_demand_max(      pMeasure,        pDemandMax,  pt,   ct);
@@ -154,6 +171,7 @@ static void rms_algorithm_Rn7302(struct measure_ctx *pctx)
         rms_algorithm_Unbalance(       pMeasure,        pUnbalance,         pt,   ct);
         rms_algorithm_loadrun(         pMeasure,          pLoadRun,  pt,   ct);
     }
+    return 0;
 }
 
 
@@ -179,6 +197,7 @@ void *msr_thread_proc(struct measure_ctx *pctx)
     struct db_basic_realtime_type             *pMeasureHalf = &(pMeasure->db_measure.numeric.halfwave.primary);
     struct db_msr_msg_evt_general_t msg;
     uint16_t    hw = 0;
+    int         hw_pair_started = 0;
     uint32_t    ct = 1;
     uint32_t    pt = 1;
     uint32_t    refreshNum = 1;
@@ -214,34 +233,47 @@ void *msr_thread_proc(struct measure_ctx *pctx)
             refreshNum = refreshNum == 0 ? 1 : refreshNum;     //  halfwave = 10ms,  so HZ = 100
             hw++;
 
-            if ((hw % HALFWAVE_NUM) == 1)
-            {
+            /*
+             * 半波/全波 seqlock 统一在 TIMER 层：
+             * start → 算法(读+算) → 成功 done / 失败 abort
+             * 半波两拍合成一次发布：奇数拍 start，偶数拍 done/abort
+             */
+            if ((hw % HALFWAVE_NUM) == 1) {
                 db_measure_info_halfwave_start(pMeasure);
-            }
-            rms_algorithm_halfwave(pMeasure, pMeasureHalf, hw);
-            if ((hw % HALFWAVE_NUM) == 0)
-            {
-                db_measure_info_halfwave_done(pMeasure);
+                if (rms_algorithm_halfwave(pMeasure, pMeasureHalf, hw, &pstVmem->db_fcas_inject) != 0) {
+                    db_measure_info_halfwave_abort(pMeasure);
+                    hw_pair_started = 0;
+                } else {
+                    hw_pair_started = 1;
+                }
+            } else {
+                if (rms_algorithm_halfwave(pMeasure, pMeasureHalf, hw, &pstVmem->db_fcas_inject) != 0) {
+                    if (hw_pair_started)
+                        db_measure_info_halfwave_abort(pMeasure);
+                } else if (hw_pair_started) {
+                    db_measure_info_halfwave_done(pMeasure);
+                }
+                hw_pair_started = 0;
             }
 
-            if((hw % refreshNum) == 0)
+            if ((hw % refreshNum) == 0)
             {
                 hw = 0;
                 if (TimeNum == 0)
                 {
                     db_measure_info_full_cycle_start(pMeasure);
-                    rms_algorithm_Rn7302(pctx);
-                    rms_algorithm_Primary_to_secondary(pMeasure,pRealtimeSecondary,pt,ct);
-                    db_measure_info_full_cycle_done(pMeasure);
-                    pMeasurePrimary->DemoFlag = 1;
+                    if (rms_algorithm_Rn7302(pctx) != 0) {
+                        db_measure_info_full_cycle_abort(pMeasure);
+                    } else {
+                        rms_algorithm_Primary_to_secondary(pMeasure,pRealtimeSecondary,pt,ct);
+                        db_measure_info_full_cycle_done(pMeasure);
+                        pMeasurePrimary->DemoFlag = 1;
+                    }
                 }
                 else
                 {
                     TimeNum--;
                 }
-            }
-            else
-            {
             }
             break;
         case DB_MSR_EVENT_TYPE_REINIT:

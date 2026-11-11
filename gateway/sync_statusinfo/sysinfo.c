@@ -16,10 +16,10 @@
 
 #include "sysinfo.h"
 #include "cJSON.h"
+#include "i2c.h"
 
 #define DEV_SIM_DETECT      "/dev/input/event1"
 #define KEY_SIM_DETECT      12   /* gpio-keys DTS 中 sim_detect 的 linux,code */
-
 
 /*************************************************************************/
 /** Function Name:                                                     **/    
@@ -28,18 +28,21 @@
 /** Return:            None.                                           **/    
 /** Notice:            None.                                           **/    
 /*************************************************************************/
-uint16_t sysinfo_ram_free()
+uint32_t sysinfo_ram_free()
 {
     FILE *fd;
     char buff[256];
-    int total, free, buffers, cached;
-    uint16_t ret;
+    int total = 0, free = 0, buffers = 0, cached = 0;
+    uint32_t ret;
 
     fd = fopen ("/proc/meminfo", "r");
+    if (fd == NULL)
+        return 0;
 
     while(!feof(fd))
     {
-        fgets (buff, sizeof(buff), fd);
+        if (fgets (buff, sizeof(buff), fd) == NULL)
+            break;
         if(!strncasecmp(buff, "MemTotal:", strlen("MemTotal:")))
         {
             sscanf (buff, "%*s %d", &total);
@@ -58,8 +61,9 @@ uint16_t sysinfo_ram_free()
             break;
         }
     }
-    fclose(fd);     //关闭文件fd
-    ret = free+buffers+cached;
+    fclose(fd);
+    /* 可用内存 ≈ MemFree + Buffers + Cached（单位 kB，需 uint32，否则 >65535 会截断） */
+    ret = (uint32_t)free + (uint32_t)buffers + (uint32_t)cached;
     return ret;
 }
 
@@ -70,20 +74,17 @@ uint16_t sysinfo_ram_free()
 /** Return:            None.                                           **/    
 /** Notice:            None.                                           **/    
 /*************************************************************************/
-uint16_t sysinfo_disk_free()
+uint32_t sysinfo_disk_free()
 {
-    uint16_t ret = 0;
     struct statfs statFS;
-    uint32_t   freeBytes = 0;
+    uint64_t freeBytes = 0;
 
     if (statfs("/", &statFS) == -1){
-        return(-1);
+        return 0;
     }
-    freeBytes = statFS.f_bfree * statFS.f_bsize;
+    freeBytes = (uint64_t)statFS.f_bfree * (uint64_t)statFS.f_bsize;
 
-    ret = (freeBytes*1.000)/1024.000;
-
-    return ret;
+    return (uint32_t)(freeBytes / 1024ULL);
 }
 
 
@@ -328,18 +329,36 @@ static void json_escape_str(char *out, size_t outlen, const char *in)
 /** Purpose:        原子写入 /var/run/netmgr/cellular.json             **/
 /** Return:         0 成功；-1 失败                                    **/
 /*************************************************************************/
-int sysinfo_cellular_write(const char *imei, const char *iccid,
-                           const char *oper, int sim, int creg,
-                           int csq, int rsrp)
+static void json_write_str_field(FILE *fp, const char *key, const char *val)
+{
+    char esc[128];
+
+    if (val && val[0]) {
+        json_escape_str(esc, sizeof(esc), val);
+        (void)fprintf(fp, "  \"%s\": \"%s\",\n", key, esc);
+    } else {
+        (void)fprintf(fp, "  \"%s\": null,\n", key);
+    }
+}
+
+static void json_write_int_field(FILE *fp, const char *key, int present, int val, int last)
+{
+    if (present)
+        (void)fprintf(fp, "  \"%s\": %d%s\n", key, val, last ? "" : ",");
+    else
+        (void)fprintf(fp, "  \"%s\": null%s\n", key, last ? "" : ",");
+}
+
+int sysinfo_cellular_write(const struct sysinfo_cellular *cell)
 {
     char tmp[128];
-    char e_imei[48];
-    char e_iccid[64];
-    char e_oper[96];
     char ts[32];
     FILE *fp;
     time_t now;
     struct tm tmv;
+
+    if (!cell)
+        return -1;
 
     (void)mkdir(NM4_STATUS_DIR, 0755);
 
@@ -347,31 +366,39 @@ int sysinfo_cellular_write(const char *imei, const char *iccid,
     localtime_r(&now, &tmv);
     (void)strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S", &tmv);
 
-    json_escape_str(e_imei, sizeof(e_imei), imei ? imei : "");
-    json_escape_str(e_iccid, sizeof(e_iccid), iccid ? iccid : "");
-    json_escape_str(e_oper, sizeof(e_oper), oper ? oper : "");
-
     (void)snprintf(tmp, sizeof(tmp), "%s.tmp", NM4_CELLULAR_JSON);
     fp = fopen(tmp, "w");
     if (!fp)
         return -1;
 
-    (void)fprintf(fp,
-                  "{\n"
-                  "  \"time\": \"%s\",\n"
-                  "  \"imei\": \"%s\",\n"
-                  "  \"iccid\": \"%s\",\n"
-                  "  \"operator\": \"%s\",\n"
-                  "  \"sim\": %d,\n"
-                  "  \"creg\": %d,\n"
-                  "  \"csq\": %d,\n"
-                  "  \"rsrp\": %d\n"
-                  "}\n",
-                  ts, e_imei, e_iccid, e_oper, sim, creg, csq, rsrp);
+    (void)fprintf(fp, "{\n  \"time\": \"%s\",\n", ts);
+    json_write_str_field(fp, "sim_status", cell->sim_status);
+    json_write_str_field(fp, "registration_state", cell->registration_state);
+    json_write_str_field(fp, "carrier", cell->carrier);
+    json_write_str_field(fp, "access_technology", cell->access_technology);
+    json_write_str_field(fp, "iccid", cell->iccid);
+    json_write_str_field(fp, "imei", cell->imei);
+    json_write_int_field(fp, "rssi_dbm", cell->has_rssi, cell->rssi_dbm, 0);
+    json_write_int_field(fp, "rsrp_dbm", cell->has_rsrp, cell->rsrp_dbm, 1);
+    (void)fprintf(fp, "}\n");
 
     if (fclose(fp) != 0)
         return -1;
     if (rename(tmp, NM4_CELLULAR_JSON) != 0)
         return -1;
     return 0;
+}
+
+/*************************************************************************/
+/** Purpose:        读取 SD3078 RTC 备份电池电压                          **/
+/** Notice:         复用 lib/i2c.h；单位 0.01V，0x100(=256)=2.56V         **/
+/*************************************************************************/
+int sysinfo_rtc_volt_get(uint16_t *pVolt)
+{
+    if (pVolt == NULL)
+        return -1;
+
+    int ret = mb_i2c_rtc_volt_get(pVolt);
+
+    return ret;
 }

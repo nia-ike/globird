@@ -84,6 +84,22 @@ void db_measure_info_halfwave_done(struct db_database_measure_base_type *pBase)
 }
 
 /**
+ * @brief : 半波周期因 SPI/CRC 等错误丢弃；已 start 时仅恢复偶数序号，不刷新 utc
+ * @param : pBase: 测量上下文
+ */
+void db_measure_info_halfwave_abort(struct db_database_measure_base_type *pBase)
+{
+    uint32_t seq;
+
+    if (pBase == NULL)
+        return;
+
+    seq = __atomic_load_n(&pBase->info.halfwave_seq, __ATOMIC_ACQUIRE);
+    if (seq & 1u)
+        __atomic_add_fetch(&pBase->info.halfwave_seq, 1u, __ATOMIC_RELEASE);
+}
+
+/**
  * @brief : 全波数据开始刷新
  * @param : pBase: 测量上下文
  */
@@ -110,4 +126,20 @@ void db_measure_info_full_cycle_done(struct db_database_measure_base_type *pBase
 
     __atomic_store_n(&pBase->info.update_utc_seq, db_measure_info_utc_ms(), __ATOMIC_RELAXED);
     seq = __atomic_add_fetch(&pBase->info.update_seq, 1u, __ATOMIC_RELEASE);
+}
+
+/**
+ * @brief : 全量周期因 SPI/CRC 等错误丢弃；已 start 时仅恢复偶数序号，不刷新 utc
+ * @param : pBase: 测量上下文
+ */
+void db_measure_info_full_cycle_abort(struct db_database_measure_base_type *pBase)
+{
+    uint32_t seq;
+
+    if (pBase == NULL)
+        return;
+
+    seq = __atomic_load_n(&pBase->info.update_seq, __ATOMIC_ACQUIRE);
+    if (seq & 1u)
+        __atomic_add_fetch(&pBase->info.update_seq, 1u, __ATOMIC_RELEASE);
 }

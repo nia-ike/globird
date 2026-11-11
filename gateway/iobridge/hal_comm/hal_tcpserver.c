@@ -18,6 +18,7 @@
 
 #include <sys/time.h>
 #include <signal.h>
+#include <errno.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <string.h>
@@ -315,8 +316,8 @@ static int hal_tcpserver_connect(struct hal_comm_ctx_t *pCtx)
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
     /* 绑定 */
     rc = bind(pCtx->fd, (const struct sockaddr *)&addr, sizeof(addr));
-    /* 监听 */
-    listen(pCtx->fd, 3);
+    /* 监听，backlog 加大以吸收重连风暴，避免队列瞬间被打满后丢弃 SYN */
+    listen(pCtx->fd, 64);
 
     log_write_string(pCtx->channel_no, 0, LOG_LEVEL_INFO, "tcpserver connect success\n");
 
@@ -437,13 +438,34 @@ static int hal_tcpserver_read(struct hal_comm_ctx_t *pCtx, uint8_t *pbuf, uint16
     }
     else if(rc > 0)
     {
-        // accept。 新连接请求
+        /* 一次把监听队列取空。新连接没有应用数据，不能把返回值当成要转发的字节 */
         if(FD_ISSET(pCtx->fd, &rd))
         {
-            fd_listen = accept(pCtx->fd, (struct sockaddr *)&client_sockaddr, &client_addr_len);
-            if(fd_listen >= 0)
+            for(;;)
             {
-                
+                int32_t option = 1;
+                int     flags;
+
+                client_addr_len = sizeof(client_sockaddr);
+                fd_listen = accept(pCtx->fd, (struct sockaddr *)&client_sockaddr, &client_addr_len);
+                if(fd_listen < 0)
+                {
+                    if((errno == EINTR) || (errno == ECONNABORTED))
+                        continue;
+                    break;
+                }
+
+                /* 业务连接设为非阻塞，单条连接的收发不能堵死本线程 */
+                flags = fcntl(fd_listen, F_GETFL, 0);
+                if(flags >= 0)
+                    fcntl(fd_listen, F_SETFL, flags | O_NONBLOCK);
+
+                /* 远端异常断开时内核可探测并回收失效连接，避免占满 TCPSERVER_LINK_NUM */
+                setsockopt(fd_listen, SOL_SOCKET, SO_KEEPALIVE, (void *)&option, sizeof(option));
+                setsockopt(fd_listen, IPPROTO_TCP, TCP_KEEPIDLE, (void *)&pCtx->keepidle, sizeof(pCtx->keepidle));
+                setsockopt(fd_listen, IPPROTO_TCP, TCP_KEEPINTVL, (void *)&pCtx->keepintvl, sizeof(pCtx->keepintvl));
+                setsockopt(fd_listen, IPPROTO_TCP, TCP_KEEPCNT, (void *)&pCtx->keepcnt, sizeof(pCtx->keepcnt));
+
                 /* 插入新连接 */
                 rc = hal_tcpserver_fdlist_push(pCtx, fd_listen);
                 if(rc < 0)
@@ -452,22 +474,21 @@ static int hal_tcpserver_read(struct hal_comm_ctx_t *pCtx, uint8_t *pbuf, uint16
                     rc = hal_tcpserver_fdlist_remove_oldest(pCtx);
                     if(rc != -1)
                         close(rc);
-                    
+
                     /* 插入新连接 */
                     rc = hal_tcpserver_fdlist_push(pCtx, fd_listen);
-
                 }
 
                 pCtx->fd_listen = fd_listen;
                 hal_tcpserver_fdmax_update(pCtx);
-                iRead = 1;
             }
         }
-        else 
+
+        /* accept 与收包在同一轮内都要处理，两者不能互斥 */
         {
             struct tcpserver_fdlist *pfd_head, *pfd;
             /*
-                遍历找到第一个有报文链接，读取该链接后退出函数！！！！。
+                遍历找到第一个有报文链接，读取该链接后退出函数。
                 不在遍历时读取所有链接，是因为本程序架构是 读写模块分离接口提供给外面调用。因此这里只管读取， 不涉及协议解析和写。
 
                 但由于tcpip协议栈会缓存链接数据，因此在下个循环read时，会读第2个链接报文数据，因此不会导致数据丢失
@@ -480,16 +501,26 @@ static int hal_tcpserver_read(struct hal_comm_ctx_t *pCtx, uint8_t *pbuf, uint16
                 {
                     if(FD_ISSET(pfd->fd, &rd))
                     {
-                        
                         iRead = recv(pfd->fd, pbuf, bytes, 0);
-                        if(iRead <= 0)
+                        if(iRead < 0)
+                        {
+                            if((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
+                                continue;
+
+                            close(pfd->fd);
+                            hal_tcpserver_fdlist_remove(pCtx, pfd->fd);
+                            hal_tcpserver_fdmax_update(pCtx);
+                            pfd->fd = -1;
+                            /* 返回 0：调用方对 TCP Server 不会拆监听，也不会把空缓冲转发出去 */
+                            return 0;
+                        }
+                        else if(iRead == 0)
                         {
                             close(pfd->fd);
                             hal_tcpserver_fdlist_remove(pCtx, pfd->fd);
-
                             hal_tcpserver_fdmax_update(pCtx);
                             pfd->fd = -1;
-                            return -1;
+                            return 0;
                         }
 
                         /* 保存 当前处理的链接。用于本次问答处理（write）的socket */
@@ -559,12 +590,51 @@ static int hal_tcpserver_write(struct hal_comm_ctx_t *pCtx, uint8_t *pbuf, uint1
 ** output parameters:   NONE
 ** Returned value:      NONE
 *********************************************************************************************************/
+static int hal_tcpserver_send_all(int fd, uint8_t *pbuf, uint32_t bytes)
+{
+    uint32_t total_write = 0;
+
+    while(total_write < bytes)
+    {
+        int rc;
+        int nwrite;
+        fd_set wr;
+        struct timeval tv;
+
+        FD_ZERO(&wr);
+        FD_SET(fd, &wr);
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+        rc = select(fd + 1, NULL, &wr, NULL, &tv);
+        if(rc <= 0)
+            return -1;
+
+        nwrite = send(fd, pbuf + total_write, bytes - total_write, 0);
+        if(nwrite < 0)
+        {
+            if((errno == EAGAIN) || (errno == EWOULDBLOCK) || (errno == EINTR))
+                continue;
+            return -1;
+        }
+        if(nwrite == 0)
+            return -1;
+
+        total_write += (uint32_t)nwrite;
+    }
+
+    return (int)total_write;
+}
+
+/*********************************************************************************************************
+** Function name:
+** Descriptions:
+** input parameters:    NONE
+** output parameters:   NONE
+** Returned value:      NONE
+*********************************************************************************************************/
 static int hal_tcpserver_write(struct hal_comm_ctx_t *pCtx, uint8_t *pbuf, uint16_t bytes)
 {
-    int rc;
-    int nwrite = -1;
-    fd_set wr;
-    struct timeval tv ;
+    int sent_any = 0;
     struct tcpserver_fdlist *pfd_head, *pfd;
 
     if(-1 == pCtx->fd)
@@ -572,34 +642,35 @@ static int hal_tcpserver_write(struct hal_comm_ctx_t *pCtx, uint8_t *pbuf, uint1
 
     pfd_head = hal_tcpserver_fdlist_head(pCtx);
 
-    FD_ZERO(&wr);
-    /* 监听所有连接 */
-    hal_tcpserver_fdlist_fdset(pCtx, &wr);
-
-    
     /*
-        往所有连接发数据
+        往所有连接发数据。连接已是非阻塞，必须发完；一条慢连接失败只关掉它自己。
     */
     slist_for_each_entry(pfd, &pfd_head->list, list)
     {
-        if(pfd->fd != -1)
+        int fd;
+
+        if(pfd->fd == -1)
+            continue;
+
+        fd = pfd->fd;
+        if(hal_tcpserver_send_all(fd, pbuf, bytes) < 0)
         {
-            tv.tv_sec   = 1;
-            tv.tv_usec  = 0;
-            rc = select(pCtx->fd_max+1, NULL, &wr, NULL, &tv);
-            if(rc > 0)
-            {
-                if(FD_ISSET(pfd->fd, &wr))
-                {
-                    send(pfd->fd, pbuf, bytes, 0);
-                }
-            }
+            close(fd);
+            hal_tcpserver_fdlist_remove(pCtx, fd);
+            hal_tcpserver_fdmax_update(pCtx);
+            pfd->fd = -1;
+            if(pCtx->fd_listen == fd)
+                pCtx->fd_listen = -1;
+        }
+        else
+        {
+            sent_any = 1;
         }
     }
 
     log_write(pCtx->channel_no, 0, LOG_TX, pbuf, bytes);
     MB_PACKET_DUMP(pCtx, "tcps-TX:", pbuf, bytes);
-    return nwrite;
+    return sent_any ? (int)bytes : -1;
 }
 
 #endif

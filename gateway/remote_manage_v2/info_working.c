@@ -113,7 +113,14 @@ float info_get_ramfree(struct remote_m_ctx_t *pctx)
 /*************************************************************************/
 float info_get_diskfree(struct remote_m_ctx_t *pctx)
 {
-    return 0;
+    int ret;
+    double lfval;
+
+    ret = DataMgmtFops.readpoint(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_DISK, &lfval);
+    if(ret < 0)
+        return 0;
+
+    return (float)lfval;
 }
 
 

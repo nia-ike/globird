@@ -86,6 +86,72 @@ void led_signal(int rsrp)
 /** Return:            None.                                           **/    
 /** Notice:            None.                                           **/    
 /*************************************************************************/
+static const char *cpin_to_sim_status(int cpin, int sim_detect)
+{
+    switch (cpin) {
+    case 0: return "ready";
+    case 1: return "pin_locked";
+    case 2: return "absent";
+    case 3: return "error";
+    case 4: return "unknown";
+    default:
+        /* AT 无应答时，只用硬件管脚确认未插卡，不猜测 ready */
+        if (sim_detect == 0)
+            return "absent";
+        return NULL;
+    }
+}
+
+static const char *creg_to_state(int stat, int ok)
+{
+    if (!ok)
+        return NULL;
+    switch (stat) {
+    case 0: return "not_registered";
+    case 1: return "home";
+    case 2: return "searching";
+    case 3: return "denied";
+    case 4: return "unknown";
+    case 5: return "roaming";
+    default: return "unknown";
+    }
+}
+
+/* 3GPP TS 27.007 COPS <AcT>。未给出 AcT 返回 NULL，不猜测。 */
+static const char *act_to_tech(int act, int known)
+{
+    if (!known || act < 0)
+        return NULL;
+    switch (act) {
+    case 0: case 1: case 3: case 8:
+        return "gsm";
+    case 2: case 4: case 5: case 6:
+        return "wcdma";
+    case 7: case 9: case 10: case 13:
+        return "lte";
+    default:
+        return "unknown";
+    }
+}
+
+/* CSQ 0–31 → dBm；99 与失败为未知，不填猜测值 */
+static int csq_to_dbm(int csq, int *dbm)
+{
+    if (csq < 0 || csq > 31 || !dbm)
+        return -1;
+    *dbm = -113 + 2 * csq;
+    return 0;
+}
+
+/* CESQ rsrp 索引 0–97 → dBm；255 为未知 */
+static int cesq_rsrp_to_dbm(int idx, int *dbm)
+{
+    if (idx < 0 || idx > 97 || !dbm)
+        return -1;
+    *dbm = -140 + idx;
+    return 0;
+}
+
 static int lte_module_process(char *devtty, int l)
 {
     int fd;
@@ -95,90 +161,93 @@ static int lte_module_process(char *devtty, int l)
     char oper[64] = {0};
     int rsrq = 0;
     int rsrp = -1;
-    int sim = 0;
-    int creg = 0;
+    int cpin = -1;
+    int creg_stat = -1;
+    int creg_ok = 0;
+    int act = -1;
+    int cops_ok = 0;
     int csq = -1;
-    struct db_info_status_type *pStatusInfo = &pDB->db_cfg_info.status; 
-    
+    int rssi_dbm = 0;
+    int rsrp_dbm = 0;
+    struct db_info_status_type *pStatusInfo = &pDB->db_cfg_info.status;
+    struct sysinfo_cellular cell;
     double lfval;
+    const char *iccid_out = NULL;
+    const char *imei_out = NULL;
 
     fd = open_serialport(devtty);
-    if(fd < 0)
+    if (fd < 0)
         return -1;
 
-    // sim imei
     ret = gsm_at_get_imei(fd, imei);
-    if(!ret)
-    {
+    if (!ret) {
         snprintf((char *)pStatusInfo->ModuleImei, sizeof(pStatusInfo->ModuleImei), "%s", imei);
-         DataMgmtFops.writepoint_string(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_IMEI, imei, sizeof(imei));
+        DataMgmtFops.writepoint_string(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_IMEI, imei, sizeof(imei));
+        imei_out = imei;
     }
 
-    // sim iccid
     ret = gsm_at_get_iccid(fd, iccid);
-    if(!ret)
-    {
+    if (!ret) {
         snprintf((char *)pStatusInfo->SimIccid, sizeof(pStatusInfo->SimIccid), "%s", iccid);
-         DataMgmtFops.writepoint_string(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_ICCID, iccid, sizeof(iccid));
+        DataMgmtFops.writepoint_string(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_ICCID, iccid, sizeof(iccid));
+        iccid_out = iccid;
     }
 
-    // operator (AT+COPS?)
-    ret = gsm_at_get_cops(fd, oper, sizeof(oper));
-    if (ret != 0)
-        oper[0] = '\0';
-       
-    // sim status (AT 命令，模组级)
-    lfval = gsm_at_get_sw_sim_insert(fd);
+    ret = gsm_at_get_cops(fd, oper, sizeof(oper), &act);
+    cops_ok = (ret == 0);
+
+    cpin = gsm_at_query_cpin(fd);
+    lfval = (cpin == 0 || cpin == 1 || cpin == 4) ? 1 : 0;
     DataMgmtFops.writepoint(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_SIM, &lfval);
-    pStatusInfo->SimIsInsert = lfval;
-    sim = (int)lfval;
+    pStatusInfo->SimIsInsert = (int16_t)lfval;
 
-    // sim creg
-    lfval = gsm_at_get_creg(fd);
+    creg_ok = (gsm_at_query_creg(fd, &creg_stat) == 0);
+    lfval = (creg_ok && (creg_stat == 1 || creg_stat == 5)) ? 1 : 0;
     DataMgmtFops.writepoint(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_CREG, &lfval);
-    pStatusInfo->SimIsReg = lfval;
-    creg = (int)lfval;
+    pStatusInfo->SimIsReg = (int16_t)lfval;
 
-    // sim csq
     lfval = gsm_at_get_csq(fd);
     DataMgmtFops.writepoint(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_CSQ, &lfval);
-    pStatusInfo->SimCsq = lfval;
+    pStatusInfo->SimCsq = (int16_t)lfval;
     csq = (int)lfval;
 
-    // sim rsrp
     ret = gsm_at_get_cesq(fd, &rsrq, &rsrp);
-    if(!ret)
-    {
+    if (!ret) {
         lfval = rsrp;
-        pStatusInfo->SimRsrp = lfval;
+        pStatusInfo->SimRsrp = (int16_t)lfval;
         DataMgmtFops.writepoint(VIRTUAL_CHNL_NO, VIRTUAL_DEV_NO, INFO_193_OFFSET_RSRP, &lfval);
-    }
-    else
-    {
-        rsrp = (int)pStatusInfo->SimRsrp;
+    } else {
+        rsrp = -1;
     }
 
     close_serialport(fd);
 
-    /* 使用已落库的字符串，避免本轮 AT 失败时 JSON 被清空 */
-    (void)sysinfo_cellular_write(
-        (const char *)pStatusInfo->ModuleImei,
-        (const char *)pStatusInfo->SimIccid,
-        oper, sim, creg, csq, rsrp);
+    memset(&cell, 0, sizeof(cell));
+    cell.sim_status = cpin_to_sim_status(cpin, pStatusInfo->SimDetect);
+    cell.registration_state = creg_to_state(creg_stat, creg_ok);
+    cell.carrier = (cops_ok && oper[0]) ? oper : NULL;
+    cell.access_technology = act_to_tech(act, cops_ok);
+    cell.iccid = iccid_out;
+    cell.imei = imei_out;
+    cell.has_rssi = (csq_to_dbm(csq, &rssi_dbm) == 0);
+    cell.rssi_dbm = rssi_dbm;
+    cell.has_rsrp = (cesq_rsrp_to_dbm(rsrp, &rsrp_dbm) == 0);
+    cell.rsrp_dbm = rsrp_dbm;
+    (void)sysinfo_cellular_write(&cell);
 
-    if(debug)
-    {
-        printf("iccid:%s\n", pStatusInfo->SimIccid);
-        printf("imei:%s\n", pStatusInfo->ModuleImei);
-        printf("operator:%s\n", oper);
-        printf("csq:%d\n", pStatusInfo->SimCsq);
-        printf("rsrp:%d\n", rsrp);
+    if (debug) {
+        printf("sim_status:%s\n", cell.sim_status ? cell.sim_status : "null");
+        printf("registration:%s\n", cell.registration_state ? cell.registration_state : "null");
+        printf("carrier:%s act:%s\n",
+               cell.carrier ? cell.carrier : "null",
+               cell.access_technology ? cell.access_technology : "null");
+        printf("rssi_dbm:%s rsrp_dbm:%s\n",
+               cell.has_rssi ? "set" : "null",
+               cell.has_rsrp ? "set" : "null");
     }
 
-    if(l)
-    {
-        led_signal(rsrp);
-    }
+    if (l)
+        led_signal(cell.has_rsrp ? cell.rsrp_dbm : rsrp);
 
     return 0;
 }
@@ -198,9 +267,11 @@ int loopit(char *devtty, int l)
 #define SIM_DETECT_INV_SEC  1
 #define SYSINFO_INV_SEC     5   /* LTE 模组信息读取周期 */
 #define NETINFO_INV_SEC     15  /* 网络/系统信息读取周期（原 cnt>2 每 3 轮 × 5s） */
+#define RTC_VOLT_INV_SEC    3600 /* RTC 电池电压：1小时更新一次 */
     int tick = 0;
     double lfval;
     int64_t i64val;
+    uint16_t rtc_volt = 0;
     struct db_info_status_type *pStatusInfo = &pDB->db_cfg_info.status; 
 
     while(1)
@@ -255,6 +326,22 @@ int loopit(char *devtty, int l)
                 printf("IP:%X\n", sysinfo_eth_ip());
                 printf("Netmask:%X\n", sysinfo_eth_netmask());
                 printf("Gateway:%X\n", sysinfo_eth_gateway());
+            }
+        }
+
+        /* RTC 备份电池电压：I2C 读 SD3078，变化很慢，周期宜明显长于模组/网络 */
+        if (tick % RTC_VOLT_INV_SEC == 0)
+        {
+            if (sysinfo_rtc_volt_get(&rtc_volt) == 0)
+            {
+                pStatusInfo->rtc_volt = (int16_t)rtc_volt;
+                if (debug)
+                    printf("RTC volt: %d (0.01V), ~%.2fV\n",
+                           rtc_volt, rtc_volt / 100.0);
+            }
+            else if (debug)
+            {
+                printf("RTC volt: read failed\n");
             }
         }
 

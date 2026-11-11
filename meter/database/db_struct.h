@@ -24,6 +24,7 @@
 #include "db_measure.h"
 #include "db_cfg.h"
 #include "db_measure_info.h"
+#include "db_fcas_inject.h"
 
 
 enum 
@@ -78,6 +79,8 @@ struct db_database_type
     struct db_database_expand_type          db_expand;
     /* 空参数 */
     struct db_null_para                     db_null;
+    /* FCAS 半波测试注入控制（仅追加在末尾，避免破坏既有偏移） */
+    struct db_fcas_inject_type              db_fcas_inject;
 };
 
 

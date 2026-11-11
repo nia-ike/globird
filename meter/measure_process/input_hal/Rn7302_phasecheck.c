@@ -77,6 +77,7 @@ uint16_t Rn7302_phase_adj_to_ch_idx(uint16_t phase_adj)
 
 /**
  * @brief : 初始化电流通道选择
+ * @note  : 低 3 位为 1/2/3 视为未换相（含仅 CT 反向），关闭 ICHSEL，避免半波/全波走精度较差路径
  * @param : pCfgUser: 用户配置参数指针
  * @return: None
  */
@@ -89,7 +90,10 @@ void Rn7302_ICHSEL_Init(struct db_cfg_user_para *pCfgUser)
     phase[1] = pCfgUser->base.PhaseAdjust2.value;
     phase[2] = pCfgUser->base.PhaseAdjust3.value;
 
-    if((1 == phase[0]) && (2 == phase[1]) && (3 == phase[2]))//1、2、3分别对应ICHSEL电流切换的A/B/C的bit位
+    /* 低 3 位 1/2/3 即相序未换；bit15 CT 反向不开启硬件换相 */
+    if ((1U == (phase[0] & 0x07U)) &&
+        (2U == (phase[1] & 0x07U)) &&
+        (3U == (phase[2] & 0x07U)))
     {
         set_ICHSEL_flag(ICHSEL_OFF);
 

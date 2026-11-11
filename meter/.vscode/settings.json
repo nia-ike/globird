@@ -1,5 +1,6 @@
 {
     "files.associations": {
         "time.h": "c"
-    }
+    },
+    "cmake.sourceDirectory": "E:/CodeSpace/Taso/gbe-ch100-cw/application/meter/measure_process/cmsis-dsp-1.16.2"
 }

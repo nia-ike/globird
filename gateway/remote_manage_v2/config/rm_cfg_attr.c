@@ -33,6 +33,8 @@
 {
     "attr":{
         "checked":1,
+        "cert_checked":0,
+        "cert_path":"",
         "url":"ego.pmac.com.cn:1883",
         "user":"pilot",
         "passwd":"pilot@123456"
@@ -40,7 +42,6 @@
 }
 
 */
-
 
 /*************************************************************************/
 /** Function Name:                                     **/
@@ -102,6 +103,26 @@ int rm_cfg_load(struct remote_m_ctx_t *pCtx, char *file)
     pJson_Item=cJSON_GetObjectItem(pJson_lay1, "checked");
     if(pJson_Item)
         pattr->checked = pJson_Item->valueint;
+
+    /* TLS 证书认证开关（拉起方注入根路径时保持启用） */
+    if(!pattr->cert_root_locked)
+    {
+        pJson_Item=cJSON_GetObjectItem(pJson_lay1, "cert_checked");
+        if(pJson_Item)
+            pattr->cert_checked = pJson_Item->valueint;
+    }
+    else
+    {
+        pattr->cert_checked = 1;
+    }
+
+    /* 证书根目录（拉起方锁定后不覆盖） */
+    if(!pattr->cert_root_locked)
+    {
+        pJson_Item=cJSON_GetObjectItem(pJson_lay1, "cert_path");
+        if(pJson_Item && pJson_Item->valuestring)
+            snprintf(pattr->cert_path, sizeof(pattr->cert_path), "%s", pJson_Item->valuestring);
+    }
 
     /*  */
     pJson_Item=cJSON_GetObjectItem(pJson_lay1, "url");

@@ -40,9 +40,16 @@ struct remote_m_project_t
 
 struct remote_m_attr_t
 {
-    uint8_t checked;     
-      
-    char    url[64];   
+    uint8_t checked;
+
+    /* 1=启用 MQTT TLS 证书认证；0=明文 */
+    uint8_t cert_checked;
+    /* 证书根目录（由拉起方/-c/57200 注入，勿写死；勿缓存 generations/<hash>） */
+    char    cert_path[200];
+    /* 1=命令行/环境变量注入，运行时不被 57200 覆盖 */
+    uint8_t cert_root_locked;
+
+    char    url[64];
     char    user[32];
     char    passwd[32];
 

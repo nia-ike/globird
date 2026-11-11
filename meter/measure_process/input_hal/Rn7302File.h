@@ -9,6 +9,7 @@
 #ifndef __RN7302FILE_H__
 #define __RN7302FILE_H__
 #include <stdint.h>
+#include <errno.h>
 #include <time.h>
 
 #ifdef  __cplusplus
@@ -21,6 +22,16 @@ void MeterChipDestory(void);
 int MeterChipReadReg(uint32_t reg, uint32_t nbyte, int32_t *pval);
 int MeterChipWriteReg(uint32_t reg, uint32_t nbyte, uint32_t val);
 int32_t MeterChipReadArea(uint32_t reg, uint32_t nbyte, uint32_t *pval);
+
+/* rn7302 misc read 错误：与驱动 errno 对齐 */
+#define RN7302_ERR_SPI   ECOMM     /* SPI 通信失败 */
+#define RN7302_ERR_CRC   EBADMSG   /* CRC 校验失败 */
+
+static inline int rn7302_is_comm_error(int err)
+{
+    return (err == RN7302_ERR_SPI || err == RN7302_ERR_CRC);
+}
+
 const char* MeterChipGetDevicePath(void);
 int MeterChipGetFd(void);
 

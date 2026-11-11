@@ -14,7 +14,13 @@ int gsm_at_get_csq(int fd);
 int gsm_at_get_iccid(int fd, char * iccid);
 int gsm_at_get_imei(int fd, char * imei);
 int gsm_at_get_cesq(int fd, int *rsrq, int *rsrp);
-/* AT+COPS? → +COPS: 0,0,"CHINA MOBILE",7；oper 写入运营商名，成功返回 0 */
-int gsm_at_get_cops(int fd, char *oper, size_t oper_len);
+/* AT+COPS?：oper 为引号内运营商名（可空）；act 为 AcT，缺省写 -1。命令成功返回 0 */
+int gsm_at_get_cops(int fd, char *oper, size_t oper_len, int *act);
+
+/* AT+CPIN?：-1 无应答；0 ready；1 pin_locked；2 absent；3 error；4 unknown */
+int gsm_at_query_cpin(int fd);
+
+/* AT+CREG?：stat 为注册状态码 0–5，解析成功返回 0 */
+int gsm_at_query_creg(int fd, int *stat);
 
 #endif

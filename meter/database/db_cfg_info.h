@@ -59,6 +59,9 @@ struct db_info_status_type
     struct timeval poweroff_Time;
     uint16_t  wifi_ready;
     int16_t   SimDetect;            // sim硬件管脚检测，0=未插卡，1=已插卡
+    int16_t   rn7302_status;        // rn7302计量芯片状态，0=正常，1=异常
+    int16_t   rtc_volt;            // rtc芯片电压值
+    uint16_t reserve[10];
 };
 
 struct db_info_product_test_type

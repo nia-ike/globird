@@ -253,11 +253,13 @@ struct remap_Modbus_node remapStatusInfo[] = {
     REG_READ_ALIGN_U16( db_cfg_info.status.ModuleImei[10],             REG_ORDER_BIG_EDIAN),
     REG_READ_ALIGN_U16( db_cfg_info.status.ModuleImei[12],             REG_ORDER_BIG_EDIAN),
     REG_READ_ALIGN_U16( db_cfg_info.status.ModuleImei[14],             REG_ORDER_BIG_EDIAN),
-    REG_READ_ALIGN_U16( db_cfg_info.status.MemFree,                 REG_ORDER_LITTLE_EDIAN),
-    REG_READ_ALIGN_U16( db_cfg_info.status.DiskFree,                REG_ORDER_LITTLE_EDIAN),
-    REG_READ_ALIGN_U16( db_cfg_info.status.wifi_ready,                REG_ORDER_LITTLE_EDIAN),
-
-    REG_READ_ALIGN_U16(db_null.dummy, REG_ORDER_LITTLE_EDIAN),   // 26, 暂时没有cpu使用率，预留
+    REG_READ_ALIGN_U32_CD( db_cfg_info.status.MemFree,                 REG_ORDER_LITTLE_EDIAN),    // 24~25 内存剩余(kB)
+    REG_READ_ALIGN_U32_AB( db_cfg_info.status.MemFree,                 REG_ORDER_LITTLE_EDIAN),
+    REG_READ_ALIGN_U32_CD( db_cfg_info.status.DiskFree,                REG_ORDER_LITTLE_EDIAN),    // 26~27 磁盘剩余(kB)
+    REG_READ_ALIGN_U32_AB( db_cfg_info.status.DiskFree,                REG_ORDER_LITTLE_EDIAN),
+    REG_READ_ALIGN_U16( db_cfg_info.status.wifi_ready,                REG_ORDER_LITTLE_EDIAN),    // 28
+    REG_READ_ALIGN_U16( db_cfg_info.status.rn7302_status,             REG_ORDER_LITTLE_EDIAN),    // 29 RN7302状态
+    REG_READ_ALIGN_U16( db_cfg_info.status.rtc_volt,                  REG_ORDER_LITTLE_EDIAN),    // 30 RTC电池电压，单位0.01V
 
 
 };

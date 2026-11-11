@@ -120,6 +120,14 @@ static int hal_tcpclient_connect(struct hal_comm_ctx_t *pCtx)
     option = fcntl(pCtx->fd, F_GETFL, 0);
     fcntl(pCtx->fd, F_SETFL, option | O_NONBLOCK);
 
+    /* 未配置 keepalive 时给保守默认值，避免 setsockopt 传入垃圾 */
+    if (pCtx->keepidle == 0)
+        pCtx->keepidle = 60;
+    if (pCtx->keepintvl == 0)
+        pCtx->keepintvl = 10;
+    if (pCtx->keepcnt == 0)
+        pCtx->keepcnt = 3;
+
     addr.sin_family = AF_INET;
     addr.sin_port = htons(pCtx->port);
     addr.sin_addr.s_addr = inet_addr(pCtx->dev);

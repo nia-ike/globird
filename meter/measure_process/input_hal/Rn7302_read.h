@@ -24,9 +24,15 @@ extern "C" {
 #define __LITTLE_ENDIAN__             1 
 
 
-struct rn7302_emu * get_EmuFull(void);
-struct rn7302_emu * get_EmuFund(void);
-struct rn7302_emu * get_EmuHalf(void);
+/**
+ * @brief  读取全波/基波/半波计量寄存器
+ * @param  ppEmu: 成功时返回数据指针；失败为 NULL
+ * @return 0: 成功; -1: 失败（驱动 SPI/CRC 等通信错误，errno 透传）
+ * @note   失败时不对外发布本拍缓存；调用方不得继续读电能寄存器
+ */
+int get_EmuFull(struct rn7302_emu **ppEmu);
+int get_EmuFund(struct rn7302_emu **ppEmu);
+int get_EmuHalf(struct rn7302_emu **ppEmu);
 
 struct rn7302_emu_energy * get_EmuFullEnergy(void);
 struct rn7302_emu_energy * get_EmuFundEnergy(void);

@@ -46,7 +46,12 @@ static void usage(char *_name)
 {
 	fprintf(stderr,"\nUsage: %s [options] \n",_name);
 	fprintf(stderr,"  -d                  : debug\n");
+	fprintf(stderr,"  -c <cert_root>      : inject MQTT TLS certificate root dir\n");
+	fprintf(stderr,"  -n <sn>             : device serial number\n");
+	fprintf(stderr,"  -v <ver>            : firmware version\n");
 	fprintf(stderr,"  -h                  : Show this help message\n");
+	fprintf(stderr,"\nCert root may also be injected via env MQTT_CERT_ROOT,\n");
+	fprintf(stderr,"Modbus 57200, or remote_m.json attr.cert_path\n");
 }
 
 
@@ -63,6 +68,7 @@ int main(int argc, char **argv)
     void     *vmem;
     int      opt;
     char     dev[32];
+    const char *env_cert_root;
 
     struct remote_m_ctx_t ctx = {
         .debug = false,
@@ -70,10 +76,13 @@ int main(int argc, char **argv)
         .version = "not set",
         .attr = {
             .checked = 1,
+            .cert_checked = 0,
+            .cert_path = "",
+            .cert_root_locked = 0,
             .url = "taso.energyun.com.cn:1883",
             //.url = "14.115.88.120:1883",
             .user = "pilot",
-            .passwd = "pilot@123456", 
+            .passwd = "pilot@123456",
 
             .ip = "taso.energyun.com.cn",
             //.ip = "14.115.88.120",
@@ -83,14 +92,27 @@ int main(int argc, char **argv)
         .vpn_abort = false,
     };
 
+    /* 拉起方可通过环境变量注入证书根 */
+    env_cert_root = getenv("MQTT_CERT_ROOT");
+    if (env_cert_root && env_cert_root[0] != '\0') {
+        snprintf(ctx.attr.cert_path, sizeof(ctx.attr.cert_path), "%s", env_cert_root);
+        ctx.attr.cert_root_locked = 1;
+        ctx.attr.cert_checked = 1;
+    }
+
     if(argc >= 2)
     {
-        while((opt=getopt(argc, argv, "v:n:dh")) != -1)
+        while((opt=getopt(argc, argv, "v:n:c:dh")) != -1)
         {
             switch(opt)
             {
                 case 'd':
                     ctx.debug = 1;
+                break;
+                case 'c':
+                    snprintf(ctx.attr.cert_path, sizeof(ctx.attr.cert_path), "%s", optarg);
+                    ctx.attr.cert_root_locked = 1;
+                    ctx.attr.cert_checked = 1;
                 break;
                 case 'n':
                     snprintf(ctx.sn, sizeof(ctx.sn) - 1, "%s", optarg);
@@ -102,7 +124,7 @@ int main(int argc, char **argv)
                     usage(argv[0]);
                     exit(0);
                 break;
-                
+
             }
         }
     }
@@ -128,6 +150,9 @@ int main(int argc, char **argv)
     if(ctx.debug)
     {
         printf("checked:        %05d\n", ctx.attr.checked);
+        printf("cert_checked:   %05d\n", ctx.attr.cert_checked);
+        printf("cert_path:      %s\n", ctx.attr.cert_path);
+        printf("cert_locked:    %05d\n", ctx.attr.cert_root_locked);
         printf("url:            %s\n", ctx.attr.url);
         printf("ip:             %s\n", ctx.attr.ip);
         printf("port:           %d\n", ctx.attr.port);
@@ -137,29 +162,21 @@ int main(int argc, char **argv)
 
     rm_cfg_project_info_load(&ctx, RM_CFG_PROJECT_FILE);
 
-//    ctx.hal_com.dump =  ctx.debug ;
-//    snprintf(dev, sizeof(dev), "%s", "/dev/ttyNM_MQTT");
-//    ctx.hal_com.dev = dev;
-//    ctx.hal_com.baud = 115200;
-//    ctx.hal_com.databit = 8;
-//    ctx.hal_com.paritybit = 'N';
-//    ctx.hal_com.stopbit = 1;
-//    ctx.hal_com.pcombase = hal_com_serial_ops_get();
-
     ctx.hal_com.dump =  ctx.debug ;
-    snprintf(dev, sizeof(dev), "%s", "127.0.0.1:502");
+    /* 透传目标改为电表 Modbus TCP（8502）；原网关采样为 502 */
+    snprintf(dev, sizeof(dev), "%s", "127.0.0.1:8502");
     ctx.hal_com.dev = dev;
-    ctx.hal_com.port = 502;
+    ctx.hal_com.port = 8502;
     ctx.hal_com.baud = 115200;
     ctx.hal_com.databit = 8;
     ctx.hal_com.paritybit = 'N';
     ctx.hal_com.stopbit = 1;
     ctx.hal_com.pcombase = hal_com_tcpclient_ops_get();
-    
+
     ctx.hal_com.pcombase->init(&ctx.hal_com);
     ctx.hal_com.pcombase->connect(&ctx.hal_com);
 
-    // MQTT init    
+    // MQTT init
     mqtt_init(&ctx);
 
     /* loop */

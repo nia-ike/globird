@@ -41,8 +41,12 @@ void db_measure_info_init(struct db_measure_runtime_info_type *info);
 
 void db_measure_info_halfwave_start(struct db_database_measure_base_type *pBase);
 void db_measure_info_halfwave_done(struct db_database_measure_base_type *pBase);
+/** 半波周期丢弃：若已 start（奇数序号），回滚到偶数，不更新 utc */
+void db_measure_info_halfwave_abort(struct db_database_measure_base_type *pBase);
 
 void db_measure_info_full_cycle_start(struct db_database_measure_base_type *pBase);
 void db_measure_info_full_cycle_done(struct db_database_measure_base_type *pBase);
+/** 全量周期因通信错误丢弃：若已 start（奇数序号），回滚到偶数，不更新 utc */
+void db_measure_info_full_cycle_abort(struct db_database_measure_base_type *pBase);
 
 #endif

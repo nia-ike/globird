@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "GBE-CH100-CW 边缘网关运行时架构",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [1280, 580]
+  },
+  "components": [
+    {
+      "id": "field_devices",
+      "type": "external",
+      "label": "南向现场设备",
+      "sublabel": "RS485 / 以太网",
+      "pos": [36, 250],
+      "size": [128, 62]
+    },
+    {
+      "id": "sampling",
+      "type": "backend",
+      "label": "sampling_service",
+      "sublabel": "协议 SO 轮询采集",
+      "pos": [220, 250],
+      "size": [136, 62]
+    },
+    {
+      "id": "vmem",
+      "type": "database",
+      "label": "/dev/vmem",
+      "sublabel": "内核 mmap 实时库",
+      "pos": [420, 250],
+      "size": [136, 62],
+      "tag": "信任锚点"
+    },
+    {
+      "id": "db_process",
+      "type": "backend",
+      "label": "db_process",
+      "sublabel": "映射 · 控制队列",
+      "pos": [620, 250],
+      "size": [136, 62]
+    },
+    {
+      "id": "modbus_slave",
+      "type": "backend",
+      "label": "modbus_slave",
+      "sublabel": "北向寄存器映射",
+      "pos": [820, 250],
+      "size": [136, 62]
+    },
+    {
+      "id": "north_clients",
+      "type": "external",
+      "label": "北向上位机",
+      "sublabel": "SCADA / 第三方",
+      "pos": [1020, 250],
+      "size": [128, 62]
+    },
+    {
+      "id": "remote_manage",
+      "type": "cloud",
+      "label": "remote_manage",
+      "sublabel": "MQTT · VPN",
+      "pos": [620, 110],
+      "size": [136, 62]
+    },
+    {
+      "id": "cloud",
+      "type": "external",
+      "label": "云平台",
+      "sublabel": "taso.energyun.com.cn",
+      "pos": [820, 110],
+      "size": [136, 62]
+    },
+    {
+      "id": "data_cache",
+      "type": "database",
+      "label": "data_cache",
+      "sublabel": "SQLite 历史快照",
+      "pos": [820, 390],
+      "size": [136, 62]
+    },
+    {
+      "id": "netmgrd",
+      "type": "security",
+      "label": "netmgrd",
+      "sublabel": "路由 · WiFi · PPP",
+      "pos": [420, 390],
+      "size": [136, 62]
+    },
+    {
+      "id": "meter_stack",
+      "type": "backend",
+      "label": "Meter 子系统",
+      "sublabel": "RN7302 · db_process_meter",
+      "pos": [220, 390],
+      "size": [136, 62]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "外部不可信区",
+      "wraps": ["field_devices", "north_clients", "cloud"],
+      "pad": 16
+    },
+    {
+      "kind": "security-group",
+      "label": "应用信任区（vmem 互信）",
+      "wraps": ["sampling", "vmem", "db_process", "modbus_slave", "remote_manage", "data_cache", "netmgrd", "meter_stack"],
+      "pad": 20
+    }
+  ],
+  "connections": [
+    {
+      "from": "field_devices",
+      "to": "sampling",
+      "label": "Modbus / DLT645 / DLT698",
+      "variant": "emphasis",
+      "labelAt": [192, 326]
+    },
+    {
+      "from": "sampling",
+      "to": "vmem",
+      "label": "写测点",
+      "variant": "emphasis"
+    },
+    {
+      "from": "vmem",
+      "to": "db_process",
+      "label": "mmap 读写",
+      "variant": "emphasis",
+      "labelAt": [488, 236]
+    },
+    {
+      "from": "db_process",
+      "to": "modbus_slave",
+      "label": "测点映射",
+      "variant": "emphasis"
+    },
+    {
+      "from": "modbus_slave",
+      "to": "north_clients",
+      "label": "Modbus TCP/RTU",
+      "variant": "emphasis",
+      "labelAt": [988, 326]
+    },
+    {
+      "from": "vmem",
+      "to": "remote_manage",
+      "label": "读状态",
+      "variant": "dashed",
+      "labelAt": [520, 198]
+    },
+    {
+      "from": "remote_manage",
+      "to": "cloud",
+      "label": "MQTT :1883",
+      "variant": "security"
+    },
+    {
+      "from": "meter_stack",
+      "to": "vmem",
+      "label": "mem_nodetable",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "主数据路径",
+      "items": [
+        "sampling_service 经协议 SO 轮询南向设备并写测点至 vmem",
+        "db_process 维护映射与控制队列，modbus_slave 暴露北向寄存器"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "信任边界",
+      "items": [
+        "南向总线、北向客户端与云平台 MQTT 为外部不可信输入",
+        "业务进程经 rt_database_attach() 互信读写 vmem，无 IPC 鉴权"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "辅助进程与外部依赖",
+      "items": [
+        "Meter 经 mem_nodetable 桥接；data_cache 写 SQLite；netmgrd 管路由",
+        "edge_alert / edge_script / anti_reflux 等边缘计算同样挂载 vmem",
+        "内核 vmem.ko · 第三方 SQLite/LZ4/Mosquitto · 硬件 RN7302/RS485/GSM"
+      ]
+    }
+  ]
+}

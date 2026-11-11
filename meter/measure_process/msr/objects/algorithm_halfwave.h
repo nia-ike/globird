@@ -25,7 +25,13 @@
 
 #define HALFWAVE_NUM 2
 
-int32_t rms_algorithm_halfwave(struct db_database_measure_base_type *pMeasureBase, struct db_basic_realtime_type *out, uint32_t time);
+/**
+ * @param inj: FCAS 注入控制；NULL 或 IDLE 时全量发布到 out
+ */
+int32_t rms_algorithm_halfwave(struct db_database_measure_base_type *pMeasureBase,
+                               struct db_basic_realtime_type *out,
+                               uint32_t time,
+                               const struct db_fcas_inject_type *inj);
 
 
 

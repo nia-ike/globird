@@ -49,24 +49,25 @@
 
 /*********************************************************************************************************
 ** Function name:       rms_algorithm_fundwave
-** Descriptions:        
-                
-** input parameters:    
-                        in  -  some meter's data come from ADC, so we need input the adc data with parameter "in"
-                        object - 
-                        out -  realtime data struct
-** output parameters:   NONE
-** Returned value:      NONE
+** Descriptions:        基波算法；电参读失败则本拍不计算且不读电能（读后清零保护）
+** Returned value:      0 成功；-1 驱动读失败
 *********************************************************************************************************/
 int32_t rms_algorithm_fundwave(struct db_database_measure_base_type *pMeasure, struct db_basic_realtime_type *out, uint32_t pt, uint32_t ct)
 {
     struct db_realtime_energy_type           *pRemainEnergy = &(pMeasure->db_measure.energy.fundwave_remain);
     struct db_realtime_energy_type         *pRealtimeEnergy = &(pMeasure->db_measure.energy.fundwave);
-    struct rn7302_emu                         *pEmuFundWave = get_EmuFund();
-    struct rn7302_emu_energy                *pEmuFundEnergy = get_EmuFundEnergy();
-    struct db_realtime_energy_type              *pNetEnergy = get_FundNetEnergy();
+    struct rn7302_emu                         *pEmuFundWave = NULL;
+    struct rn7302_emu_energy                *pEmuFundEnergy = NULL;
+    struct db_realtime_energy_type              *pNetEnergy = NULL;
 
     struct db_cfg_user_para     *pCfgUser = &(pMeasure->db_cfg.user);
+
+    if (get_EmuFund(&pEmuFundWave) != 0)
+        return -1;
+
+    pEmuFundEnergy = get_EmuFundEnergy();
+    pNetEnergy     = get_FundNetEnergy();
+
     /* 1. calculate the angle first */
     rms_algorithm_voltageangle(   pMeasure,   out,     pEmuFundWave,  1,  1);
     rms_algorithm_currentangle(   pMeasure,   out,     pEmuFundWave,  1,  1);

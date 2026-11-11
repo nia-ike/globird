@@ -68,6 +68,10 @@ struct db_info_status_type
     struct timeval poweroff_Time;
     uint16_t  wifi_ready;
     int16_t   SimDetect;            // sim硬件管脚检测，0=未插卡，1=已插卡
+    int16_t   rn7302_status;        // rn7302计量芯片状态，0=正常，1=异常
+    int16_t   rtc_volt;             // rtc芯片电压值，单位0.01V
+    uint16_t reserve[10];
+
 };
 
 struct db_info_product_test_type
@@ -100,18 +104,32 @@ struct db_database_type
 
 
 
-uint16_t sysinfo_ram_free();
-uint16_t sysinfo_disk_free();
+uint32_t sysinfo_ram_free();
+uint32_t sysinfo_disk_free();
 uint64_t sysinfo_eth_mac(void);
 uint32_t sysinfo_eth_gateway(void);
 uint32_t sysinfo_eth_netmask(void);
 uint32_t sysinfo_eth_ip(void);
 uint64_t sysinfo_sn(void);
 int16_t  sysinfo_sim_detect(void);
+/* 读 SD3078 RTC 电池电压；成功返回 0，*pVolt 单位 0.01V（0x100=2.56V） */
+int      sysinfo_rtc_volt_get(uint16_t *pVolt);
 uint16_t sysinfo_wifi_ready(void);
-int      sysinfo_cellular_write(const char *imei, const char *iccid,
-                                const char *oper, int sim, int creg,
-                                int csq, int rsrp);
+/* 字符串为 NULL 或空则 JSON 写 null；has_rssi/has_rsrp 为 0 时对应字段写 null */
+struct sysinfo_cellular {
+    const char *sim_status;
+    const char *registration_state;
+    const char *carrier;
+    const char *access_technology;
+    const char *iccid;
+    const char *imei;
+    int         has_rssi;
+    int         rssi_dbm;
+    int         has_rsrp;
+    int         rsrp_dbm;
+};
+
+int      sysinfo_cellular_write(const struct sysinfo_cellular *cell);
 
 #define NM4_STATUS_DIR      "/var/run/netmgr"
 #define NM4_STATUS_JSON     "/var/run/netmgr/status.json"

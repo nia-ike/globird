@@ -13,6 +13,8 @@ all:
 	cp database/db_process_meter bin/
 	cp measure_process/measure_process_rn7302 bin/
 	cp modbus_slave_meter/modbus_slave_meter bin/
+	cp fcas_inject/fcas_inject bin/
+	cp key_rst/key_rst bin/
 	
 
 
