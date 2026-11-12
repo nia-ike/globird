@@ -85,6 +85,8 @@ LDFLAGS   =  -lm -pthread -Wl,--gc-sections -flto
 
 SOURCES = ../database/db_device ../database/db_msr_msgevent_api ../database/db_msgevent_api ../database/db_measure_info ../database/db_fcas_inject
 
+# 公共算子：../measure（与本进程并列，不单独出可执行文件）
+MEASURE_SRCDIRS := $(shell find ../measure -type d 2>/dev/null)
 
 
 ## Implicit Section: change the following only when necessary.
@@ -160,11 +162,15 @@ ifeq ($(SRCDIRS),)
 endif
 
 # 2014/05/28 modify by chenzy
+# 本地头优先（供本进程旧算子）；measure 另有专用规则，避免同名头被盖住
+LOCAL_INCLUDES   := $(foreach d,$(shell find . -type d),-I$(d))
+MEASURE_INCLUDES := $(foreach d,$(MEASURE_SRCDIRS),-I$(d))
 ifeq ($(CFLAGS_EX),)
-	CFLAGS_EX := $(foreach d,$(shell find . -type d),-I$(d))
+	CFLAGS_EX := $(LOCAL_INCLUDES) $(MEASURE_INCLUDES)
 endif
 
 SOURCES += $(foreach d,$(SRCDIRS),$(wildcard $(addprefix $(d)/*,$(SRCEXTS))))
+SOURCES += $(foreach d,$(MEASURE_SRCDIRS),$(wildcard $(addprefix $(d)/*,$(SRCEXTS))))
 # Filter out aggregated CMSIS-DSP files to avoid duplicate definitions
 # These files contain all individual functions and cause conflicts
 SOURCES := $(filter-out %Functions.c %FunctionsF16.c %CommonTables.c %CommonTablesF16.c,$(SOURCES))
@@ -180,6 +186,7 @@ SOURCES := $(filter-out %gaussian_naive_bayes_predict_f32.c,$(SOURCES))
 SOURCES := $(filter-out %weighted_average_f32.c %barycenter_f32.c,$(SOURCES))
 SOURCES := $(filter-out %logsumexp_f32.c %kullback_leibler_f32.c %entropy_f32.c,$(SOURCES))
 HEADERS = $(foreach d,$(SRCDIRS),$(wildcard $(addprefix $(d)/*,$(HDREXTS))))
+HEADERS += $(foreach d,$(MEASURE_SRCDIRS),$(wildcard $(addprefix $(d)/*,$(HDREXTS))))
 SRC_CXX = $(filter-out %.cpp,$(SOURCES))
 OBJS    = $(addsuffix .o, $(basename $(SOURCES)))
 DEPS    = $(OBJS:.o=.d)
@@ -239,6 +246,10 @@ all: $(PROGRAM)
 # Rules for generating object files (.o).
 #----------------------------------------
 objs:$(OBJS)
+
+# measure 公共算子：本树 -I 优先，避免与 msr/objects 下同名头冲突
+../measure/%.o: ../measure/%.c
+	$(CC) $(MEASURE_INCLUDES) $(LOCAL_INCLUDES) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 %.o:%.c
 	$(COMPILE.c) $< -o $@
