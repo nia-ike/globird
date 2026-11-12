@@ -403,7 +403,7 @@ static const ST_REG_4XXXX_ATTR   reg_4x_section[] = {
 
     { (struct remap_Modbus_node*)&remapStatusInfo[0],           64000,      MB_SECTION_GET_REG_NUM(remapStatusInfo),         MB_TYPE_RAM,      RO ,     NULL,    NULL}, // device data
     { (struct remap_Modbus_node*)&remapFactoryTestStatus[0],    64100,      MB_SECTION_GET_REG_NUM(remapFactoryTestStatus),  MB_TYPE_LOCAL,    RO ,     mb_factory_result_readhandle,  NULL}, // 生产测试结果 0正常/1异常
-    { (struct remap_Modbus_node*)&remapTestInfo[0],             64200,      MB_SECTION_GET_REG_NUM(remapTestInfo),           MB_TYPE_RAM,      RO ,     NULL,    NULL}, // device data   
+    { (struct remap_Modbus_node*)&remapTestInfo[0],             64200,      MB_SECTION_GET_REG_NUM(remapTestInfo),           MB_TYPE_RAM,      RO ,     mb_productTest_info_handle,    NULL}, // device data   
    
     { (struct remap_Modbus_node*)&remapSystemInfo[0],           64300,      MB_SECTION_GET_REG_NUM(remapSystemInfo),          MB_TYPE_LOCAL,    RW_NP ,  NULL,    mb_cmd_synctime_handle}, // 
     { (struct remap_Modbus_node*)&remapSystemTimeZone[0],       64302,      MB_SECTION_GET_REG_NUM(remapSystemTimeZone),      MB_TYPE_LOCAL,    RW_NP ,  NULL,    mb_cmd_timezone_handle}, // 
